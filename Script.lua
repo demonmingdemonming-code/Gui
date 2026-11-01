@@ -1,3 +1,4 @@
+
 -- PRISON LIFE ULTIMATE GUI
 -- LocalScript: StarterPlayer > StarterPlayerScripts
 -- Intended for your own Roblox experience.
@@ -21,8 +22,6 @@ local targetLock = false
 
 local flyEnabled = false
 local flySpeed = 30
-local flyUp = false
-local flyDown = false
 
 local originalCollisions = {}
 local highlights = {}
@@ -185,25 +184,15 @@ local flySpeedBox = makeBox(
 )
 flySpeedBox.Text = "30"
 
-local upButton = makeButton(
-    menu2, "HOLD UP", UDim2.fromOffset(105, 40),
-    UDim2.fromOffset(20, 190)
-)
-
-local downButton = makeButton(
-    menu2, "HOLD DOWN", UDim2.fromOffset(105, 40),
-    UDim2.fromOffset(135, 190)
-)
-
 local flyHelp = Instance.new("TextLabel")
 flyHelp.Size = UDim2.fromOffset(220, 75)
-flyHelp.Position = UDim2.fromOffset(20, 240)
+flyHelp.Position = UDim2.fromOffset(20, 190)
 flyHelp.BackgroundTransparency = 1
 flyHelp.TextColor3 = Color3.fromRGB(220, 220, 220)
 flyHelp.TextWrapped = true
 flyHelp.TextScaled = true
 flyHelp.Font = Enum.Font.Gotham
-flyHelp.Text = "Move with your movement controls. Space = up; Ctrl = down. On mobile, use the UP/DOWN buttons."
+flyHelp.Text = "Look in the direction you want to fly, then use your movement controls."
 flyHelp.Parent = menu2
 
 -- REOPEN BUTTON
@@ -243,8 +232,6 @@ end
 local function stopFlying()
     flyEnabled = false
     flyButton.Text = "Fly: OFF"
-    flyUp = false
-    flyDown = false
 
     if flyConnection then
         flyConnection:Disconnect()
@@ -316,44 +303,93 @@ local function startFlying()
             flySpeed = math.clamp(inputSpeed, 30, 200)
         end
 
-        local direction = humanoid.MoveDirection
-        local vertical = 0
-
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) or flyUp then
-            vertical += 1
+        camera = workspace.CurrentCamera
+        if not camera then
+            return
         end
 
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
-            or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
-            or flyDown then
-            vertical -= 1
+        local cameraCF = camera.CFrame
+        local lookDirection = cameraCF.LookVector
+        local rightDirection = cameraCF.RightVector
+
+        -- Get a horizontal forward direction.
+        -- The fallback prevents problems when looking almost straight up/down.
+        local flatForward = Vector3.new(
+            lookDirection.X,
+            0,
+            lookDirection.Z
+        )
+
+        if flatForward.Magnitude < 0.001 then
+            local rootLook = root.CFrame.LookVector
+            flatForward = Vector3.new(rootLook.X, 0, rootLook.Z)
         end
 
-        -- Use camera-relative keyboard movement on desktop.
-        if not UserInputService.TouchEnabled then
-            local cameraCF = camera.CFrame
-            local forward = Vector3.new(cameraCF.LookVector.X, 0, cameraCF.LookVector.Z)
-            local right = Vector3.new(cameraCF.RightVector.X, 0, cameraCF.RightVector.Z)
-
-            if forward.Magnitude > 0 then forward = forward.Unit end
-            if right.Magnitude > 0 then right = right.Unit end
-
-            direction = Vector3.zero
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction += forward end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction -= forward end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction += right end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction -= right end
+        if flatForward.Magnitude > 0.001 then
+            flatForward = flatForward.Unit
+        else
+            flatForward = Vector3.new(0, 0, -1)
         end
 
-        local velocity = direction + Vector3.new(0, vertical, 0)
-        if velocity.Magnitude > 1 then
-            velocity = velocity.Unit
+        local flatRight = Vector3.new(
+            rightDirection.X,
+            0,
+            rightDirection.Z
+        )
+
+        if flatRight.Magnitude > 0.001 then
+            flatRight = flatRight.Unit
+        else
+            flatRight = Vector3.new(1, 0, 0)
         end
 
-        flyVelocity.Velocity = velocity * flySpeed
+        local forwardAmount = 0
+        local rightAmount = 0
 
-        local look = camera.CFrame.LookVector
-        flyGyro.CFrame = CFrame.lookAt(root.Position, root.Position + look)
+        if UserInputService.TouchEnabled then
+            -- Mobile: use the movement direction from the thumbstick.
+            local moveDirection = humanoid.MoveDirection
+
+            if moveDirection.Magnitude > 0.05 then
+                forwardAmount = moveDirection:Dot(flatForward)
+                rightAmount = moveDirection:Dot(flatRight)
+            end
+        else
+            -- Desktop: read WASD directly.
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                forwardAmount += 1
+            end
+
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                forwardAmount -= 1
+            end
+
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                rightAmount += 1
+            end
+
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                rightAmount -= 1
+            end
+        end
+
+        -- Forward/backward follows the camera's full look direction.
+        -- Sideways movement follows the camera's right direction.
+        local velocityDirection =
+            (lookDirection * forwardAmount) +
+            (rightDirection * rightAmount)
+
+        if velocityDirection.Magnitude > 1 then
+            velocityDirection = velocityDirection.Unit
+        end
+
+        flyVelocity.Velocity = velocityDirection * flySpeed
+
+        -- Face the direction the camera is looking.
+        flyGyro.CFrame = CFrame.lookAt(
+            root.Position,
+            root.Position + lookDirection
+        )
     end)
 end
 
@@ -388,27 +424,6 @@ flySpeedBox.FocusLost:Connect(function()
     else
         flySpeedBox.Text = tostring(flySpeed)
     end
-end)
-
--- MOBILE HOLD BUTTONS
-upButton.MouseButton1Down:Connect(function()
-    flyUp = true
-end)
-upButton.MouseButton1Up:Connect(function()
-    flyUp = false
-end)
-upButton.MouseLeave:Connect(function()
-    flyUp = false
-end)
-
-downButton.MouseButton1Down:Connect(function()
-    flyDown = true
-end)
-downButton.MouseButton1Up:Connect(function()
-    flyDown = false
-end)
-downButton.MouseLeave:Connect(function()
-    flyDown = false
 end)
 
 -- LOOP SPEED / JUMP
@@ -463,8 +478,6 @@ local function setNoclip(enabled)
     end
 end
 
--- Apply locally every physics step. In a multiplayer experience, server-side
--- collision rules may also be needed for fully authoritative noclip.
 RunService.Stepped:Connect(function()
     if not noclip then return end
 
