@@ -1,0 +1,476 @@
+
+-- PRISON LIFE ULTIMATE GUI
+-- StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+-- SETTINGS
+local KEY = "xino7"
+local speed = 16
+local jumpPower = 50
+local loopSpeed = false
+local loopJumpPower = false
+local noclip = false
+local espEnabled = false
+local targetLock = false
+
+local originalCollisions = {}
+local highlights = {}
+local lockedTarget = nil
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "PrisonLifeUltimateGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local function makeButton(parent, text, size, position)
+    local button = Instance.new("TextButton")
+    button.Size = size
+    button.Position = position
+    button.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Text = text
+    button.TextScaled = true
+    button.Parent = parent
+    return button
+end
+
+local function makeBox(parent, placeholder, size, position)
+    local box = Instance.new("TextBox")
+    box.Size = size
+    box.Position = position
+    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.PlaceholderText = placeholder
+    box.Text = ""
+    box.ClearTextOnFocus = false
+    box.Parent = parent
+    return box
+end
+
+-- KEY GATE
+local keyFrame = Instance.new("Frame")
+keyFrame.Size = UDim2.fromOffset(250, 130)
+keyFrame.Position = UDim2.new(0.5, -125, 0.5, -65)
+keyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+keyFrame.Parent = gui
+
+local keyBox = makeBox(
+    keyFrame,
+    "Enter key",
+    UDim2.fromOffset(210, 35),
+    UDim2.fromOffset(20, 20)
+)
+
+local keyButton = makeButton(
+    keyFrame,
+    "UNLOCK",
+    UDim2.fromOffset(210, 35),
+    UDim2.fromOffset(20, 70)
+)
+
+-- MAIN MENU
+local main = Instance.new("Frame")
+main.Size = UDim2.fromOffset(260, 390)
+main.Position = UDim2.new(0, 30, 0.3, 0)
+main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+main.Active = true
+main.Draggable = true
+main.Visible = false
+main.Parent = gui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -32, 0, 35)
+title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
+title.Text = "PRISON LIFE ULTIMATE GUI"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextScaled = true
+title.Parent = main
+
+-- CLOSE BUTTON
+local closeButton = makeButton(
+    main,
+    "X",
+    UDim2.fromOffset(32, 35),
+    UDim2.new(1, -32, 0, 0)
+)
+
+-- MENU2 TAB
+local menuSwitch = makeButton(
+    main,
+    "MENU2",
+    UDim2.fromOffset(65, 30),
+    UDim2.new(0, -67, 0, 42)
+)
+
+-- ORIGINAL FEATURES
+local espButton = makeButton(
+    main,
+    "ESP: OFF",
+    UDim2.fromOffset(220, 32),
+    UDim2.fromOffset(20, 45)
+)
+
+local targetButton = makeButton(
+    main,
+    "Target Lock: OFF",
+    UDim2.fromOffset(220, 32),
+    UDim2.fromOffset(20, 83)
+)
+
+local noclipButton = makeButton(
+    main,
+    "Noclip: OFF",
+    UDim2.fromOffset(220, 32),
+    UDim2.fromOffset(20, 121)
+)
+
+-- LOOP SPEED
+local speedBox = makeBox(
+    main,
+    "WalkSpeed (16-200)",
+    UDim2.fromOffset(220, 30),
+    UDim2.fromOffset(20, 165)
+)
+
+local speedButton = makeButton(
+    main,
+    "Loop Speed: OFF",
+    UDim2.fromOffset(220, 32),
+    UDim2.fromOffset(20, 200)
+)
+
+-- LOOP JUMPPOWER
+local jumpBox = makeBox(
+    main,
+    "JumpPower (0-200)",
+    UDim2.fromOffset(220, 30),
+    UDim2.fromOffset(20, 238)
+)
+
+local jumpButton = makeButton(
+    main,
+    "Loop JumpPower: OFF",
+    UDim2.fromOffset(220, 32),
+    UDim2.fromOffset(20, 273)
+)
+
+-- MENU2
+local menu2 = Instance.new("Frame")
+menu2.Size = UDim2.fromOffset(260, 390)
+menu2.Position = main.Position
+menu2.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+menu2.Active = true
+menu2.Draggable = true
+menu2.Visible = false
+menu2.Parent = gui
+
+local menu2Title = Instance.new("TextLabel")
+menu2Title.Size = UDim2.new(1, -32, 0, 35)
+menu2Title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
+menu2Title.Text = "MENU2"
+menu2Title.TextColor3 = Color3.new(1, 1, 1)
+menu2Title.TextScaled = true
+menu2Title.Parent = menu2
+
+local menu2Close = makeButton(
+    menu2,
+    "X",
+    UDim2.fromOffset(32, 35),
+    UDim2.new(1, -32, 0, 0)
+)
+
+local backButton = makeButton(
+    menu2,
+    "BACK TO MENU",
+    UDim2.fromOffset(220, 32),
+    UDim2.fromOffset(20, 50)
+)
+
+-- REOPEN BUTTON
+local reopenButton = makeButton(
+    gui,
+    "OPEN GUI",
+    UDim2.fromOffset(110, 35),
+    UDim2.fromOffset(10, 10)
+)
+reopenButton.Visible = false
+
+-- MENU SWITCHING
+menuSwitch.MouseButton1Click:Connect(function()
+    menu2.Position = main.Position
+    main.Visible = false
+    menu2.Visible = true
+end)
+
+backButton.MouseButton1Click:Connect(function()
+    menu2.Visible = false
+    main.Visible = true
+end)
+
+-- CLOSE / REOPEN
+local function closeGUI()
+    main.Visible = false
+    menu2.Visible = false
+    reopenButton.Visible = true
+end
+
+closeButton.MouseButton1Click:Connect(closeGUI)
+menu2Close.MouseButton1Click:Connect(closeGUI)
+
+reopenButton.MouseButton1Click:Connect(function()
+    reopenButton.Visible = false
+    main.Visible = true
+end)
+
+-- CHARACTER HELPERS
+local function getHumanoid()
+    local character = player.Character
+    return character and character:FindFirstChildOfClass("Humanoid")
+end
+
+-- LOOP SPEED TOGGLE
+speedButton.MouseButton1Click:Connect(function()
+    loopSpeed = not loopSpeed
+    speedButton.Text = "Loop Speed: " .. (loopSpeed and "ON" or "OFF")
+end)
+
+-- LOOP JUMPPOWER TOGGLE
+jumpButton.MouseButton1Click:Connect(function()
+    loopJumpPower = not loopJumpPower
+    jumpButton.Text = "Loop JumpPower: " .. (loopJumpPower and "ON" or "OFF")
+end)
+
+-- CONTINUOUS SPEED AND JUMPPOWER
+RunService.Heartbeat:Connect(function()
+    local humanoid = getHumanoid()
+    if not humanoid then return end
+
+    if loopSpeed then
+        local value = tonumber(speedBox.Text)
+        if value then
+            speed = math.clamp(value, 16, 200)
+            humanoid.WalkSpeed = speed
+        end
+    end
+
+    if loopJumpPower then
+        local value = tonumber(jumpBox.Text)
+        if value then
+            jumpPower = math.clamp(value, 0, 200)
+            humanoid.UseJumpPower = true
+            humanoid.JumpPower = jumpPower
+        end
+    end
+end)
+
+-- NOCLIP
+local function setNoclip(enabled)
+    noclip = enabled
+    noclipButton.Text = "Noclip: " .. (enabled and "ON" or "OFF")
+
+    if not enabled then
+        for part, oldValue in pairs(originalCollisions) do
+            if part and part.Parent then
+                part.CanCollide = oldValue
+            end
+        end
+
+        table.clear(originalCollisions)
+    end
+end
+
+RunService.Stepped:Connect(function()
+    if not noclip then return end
+
+    local character = player.Character
+    if not character then return end
+
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            if originalCollisions[part] == nil then
+                originalCollisions[part] = part.CanCollide
+            end
+
+            part.CanCollide = false
+        end
+    end
+end)
+
+noclipButton.MouseButton1Click:Connect(function()
+    setNoclip(not noclip)
+end)
+
+-- ENEMY CHECK
+local function isEnemy(otherPlayer)
+    if otherPlayer == player then
+        return false
+    end
+
+    if player.Team and otherPlayer.Team then
+        return player.Team ~= otherPlayer.Team
+    end
+
+    return true
+end
+
+-- ESP
+local function updateESP(otherPlayer)
+    if otherPlayer == player then return end
+
+    local character = otherPlayer.Character
+    if not character then return end
+
+    if espEnabled then
+        if not highlights[otherPlayer]
+            or highlights[otherPlayer].Parent ~= character then
+
+            if highlights[otherPlayer] then
+                highlights[otherPlayer]:Destroy()
+            end
+
+            local highlight = Instance.new("Highlight")
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.Parent = character
+
+            highlights[otherPlayer] = highlight
+        end
+    elseif highlights[otherPlayer] then
+        highlights[otherPlayer]:Destroy()
+        highlights[otherPlayer] = nil
+    end
+end
+
+local function refreshESP()
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        updateESP(otherPlayer)
+    end
+end
+
+espButton.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    espButton.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
+    refreshESP()
+end)
+
+local function setupPlayer(otherPlayer)
+    if otherPlayer == player then return end
+
+    otherPlayer.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        updateESP(otherPlayer)
+    end)
+end
+
+for _, otherPlayer in ipairs(Players:GetPlayers()) do
+    setupPlayer(otherPlayer)
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
+
+Players.PlayerRemoving:Connect(function(otherPlayer)
+    if highlights[otherPlayer] then
+        highlights[otherPlayer]:Destroy()
+        highlights[otherPlayer] = nil
+    end
+end)
+
+-- FIND ENEMY NEAREST TO CROSSHAIR
+local function getTargetAtCrosshair()
+    local bestTarget = nil
+    local bestDistance = 180
+    local center = camera.ViewportSize / 2
+
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if isEnemy(otherPlayer) then
+            local character = otherPlayer.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+            if root and humanoid and humanoid.Health > 0 then
+                local screenPosition, onScreen =
+                    camera:WorldToViewportPoint(root.Position)
+
+                if onScreen and screenPosition.Z > 0 then
+                    local distance = (
+                        Vector2.new(screenPosition.X, screenPosition.Y) - center
+                    ).Magnitude
+
+                    if distance < bestDistance then
+                        bestDistance = distance
+                        bestTarget = otherPlayer
+                    end
+                end
+            end
+        end
+    end
+
+    return bestTarget
+end
+
+-- TARGET LOCK
+targetButton.MouseButton1Click:Connect(function()
+    targetLock = not targetLock
+    lockedTarget = nil
+    targetButton.Text = "Target Lock: " .. (targetLock and "ON" or "OFF")
+end)
+
+RunService:BindToRenderStep(
+    "PrisonLifeTargetCamera",
+    Enum.RenderPriority.Camera.Value + 1,
+    function()
+        if not targetLock then return end
+
+        if not lockedTarget
+            or not lockedTarget.Character
+            or not lockedTarget.Character:FindFirstChild("HumanoidRootPart")
+            or not isEnemy(lockedTarget) then
+
+            lockedTarget = getTargetAtCrosshair()
+        end
+
+        if not lockedTarget then return end
+
+        local character = lockedTarget.Character
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+        if root and humanoid and humanoid.Health > 0 then
+            camera.CFrame = CFrame.lookAt(
+                camera.CFrame.Position,
+                root.Position
+            )
+        else
+            lockedTarget = nil
+        end
+    end
+)
+
+-- RESPAWN SUPPORT
+player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid")
+    table.clear(originalCollisions)
+
+    if espEnabled then
+        task.wait(0.5)
+        refreshESP()
+    end
+end)
+
+-- KEY CHECK
+keyButton.MouseButton1Click:Connect(function()
+    if keyBox.Text == KEY then
+        keyFrame.Visible = false
+        main.Visible = true
+    else
+        keyBox.Text = ""
+        keyBox.PlaceholderText = "Incorrect key"
+    end
+end)
