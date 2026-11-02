@@ -1,4 +1,4 @@
--- PRISON LIFE ULTIMATE GUI
+-- PRISON LIFE ULTIMATE GUI + TPA
 -- LocalScript: StarterPlayer > StarterPlayerScripts
 -- Intended for your own Roblox experience.
 
@@ -22,6 +22,7 @@ local targetLock = false
 local flyEnabled = false
 local flySpeed = 30
 local selectedVersion = nil
+local selectedPlayer = nil
 
 local originalCollisions = {}
 local highlights = {}
@@ -190,7 +191,7 @@ menu2.Parent = gui
 local menu2Title = Instance.new("TextLabel")
 menu2Title.Size = UDim2.new(1, -32, 0, 35)
 menu2Title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
-menu2Title.Text = "MENU2 - MOVEMENT"
+menu2Title.Text = "MENU2 - MOVEMENT + TPA"
 menu2Title.TextColor3 = Color3.new(1, 1, 1)
 menu2Title.TextScaled = true
 menu2Title.Font = Enum.Font.GothamBold
@@ -227,6 +228,21 @@ flyHelp.Font = Enum.Font.Gotham
 flyHelp.Text = "Look in the direction you want to fly, then use your movement controls."
 flyHelp.Parent = menu2
 
+-- TPA BUTTONS
+local playerSelector = makeButton(
+    menu2,
+    "SELECT PLAYER",
+    UDim2.fromOffset(150, 38),
+    UDim2.fromOffset(15, 155)
+)
+
+local teleportButton = makeButton(
+    menu2,
+    "TELEPORT TO PLAYER",
+    UDim2.fromOffset(150, 38),
+    UDim2.fromOffset(185, 155)
+)
+
 -- LAYOUT SYSTEM
 local function applyLayout(mode)
     selectedVersion = mode
@@ -253,8 +269,7 @@ local function applyLayout(mode)
     menu2Close.Position = UDim2.new(1, -35, 0, 0)
 
     if isPC then
-        -- PC: LARGE SIDEWAYS RECTANGLE
-
+        -- PC MAIN MENU
         espButton.Size = UDim2.fromOffset(225, 38)
         espButton.Position = UDim2.fromOffset(15, 50)
 
@@ -292,9 +307,14 @@ local function applyLayout(mode)
         flyHelp.Size = UDim2.fromOffset(225, 90)
         flyHelp.Position = UDim2.fromOffset(495, 100)
 
-    else
-        -- MOBILE: SMALL SIDEWAYS RECTANGLE
+        playerSelector.Size = UDim2.fromOffset(225, 38)
+        playerSelector.Position = UDim2.fromOffset(15, 205)
 
+        teleportButton.Size = UDim2.fromOffset(225, 38)
+        teleportButton.Position = UDim2.fromOffset(255, 205)
+
+    else
+        -- MOBILE MAIN MENU
         espButton.Size = UDim2.fromOffset(150, 35)
         espButton.Position = UDim2.fromOffset(15, 45)
 
@@ -331,6 +351,12 @@ local function applyLayout(mode)
 
         flyHelp.Size = UDim2.fromOffset(150, 90)
         flyHelp.Position = UDim2.fromOffset(185, 95)
+
+        playerSelector.Size = UDim2.fromOffset(150, 35)
+        playerSelector.Position = UDim2.fromOffset(15, 205)
+
+        teleportButton.Size = UDim2.fromOffset(150, 35)
+        teleportButton.Position = UDim2.fromOffset(185, 205)
     end
 end
 
@@ -378,6 +404,71 @@ local function getRoot()
     local character = getCharacter()
     return character and character:FindFirstChild("HumanoidRootPart")
 end
+
+-- TPA PLAYER SYSTEM
+local function refreshSelectedPlayer()
+    local available = {}
+
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            table.insert(available, otherPlayer)
+        end
+    end
+
+    if #available == 0 then
+        selectedPlayer = nil
+        playerSelector.Text = "NO PLAYERS"
+        return
+    end
+
+    local currentIndex = 0
+
+    for index, otherPlayer in ipairs(available) do
+        if otherPlayer == selectedPlayer then
+            currentIndex = index
+            break
+        end
+    end
+
+    currentIndex += 1
+
+    if currentIndex > #available then
+        currentIndex = 1
+    end
+
+    selectedPlayer = available[currentIndex]
+    playerSelector.Text = selectedPlayer.Name
+end
+
+playerSelector.MouseButton1Click:Connect(refreshSelectedPlayer)
+
+teleportButton.MouseButton1Click:Connect(function()
+    if not selectedPlayer or selectedPlayer.Parent ~= Players then
+        teleportButton.Text = "SELECT PLAYER FIRST"
+        return
+    end
+
+    local myRoot = getRoot()
+    local targetCharacter = selectedPlayer.Character
+    local targetRoot = targetCharacter
+        and targetCharacter:FindFirstChild("HumanoidRootPart")
+    local targetHumanoid = targetCharacter
+        and targetCharacter:FindFirstChildOfClass("Humanoid")
+
+    if myRoot and targetRoot and targetHumanoid and targetHumanoid.Health > 0 then
+        myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 4)
+        teleportButton.Text = "TELEPORTED!"
+    else
+        teleportButton.Text = "PLAYER UNAVAILABLE"
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(otherPlayer)
+    if selectedPlayer == otherPlayer then
+        selectedPlayer = nil
+        playerSelector.Text = "SELECT PLAYER"
+    end
+end)
 
 -- FLY CLEANUP
 local function stopFlying()
@@ -464,10 +555,12 @@ local function startFlying()
 
         if UserInputService.TouchEnabled then
             local moveDirection = humanoid.MoveDirection
+
             if moveDirection.Magnitude > 0.05 then
                 local flatForward = Vector3.new(
                     lookDirection.X, 0, lookDirection.Z
                 )
+
                 local flatRight = Vector3.new(
                     rightDirection.X, 0, rightDirection.Z
                 )
@@ -487,12 +580,15 @@ local function startFlying()
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then
                 forwardAmount += 1
             end
+
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then
                 forwardAmount -= 1
             end
+
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then
                 rightAmount += 1
             end
+
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then
                 rightAmount -= 1
             end
@@ -526,6 +622,7 @@ end)
 -- SPEED BOX VALIDATION
 speedBox.FocusLost:Connect(function()
     local value = tonumber(speedBox.Text)
+
     if value then
         speedBox.Text = tostring(math.clamp(value, 16, 10000))
     end
@@ -533,6 +630,7 @@ end)
 
 jumpBox.FocusLost:Connect(function()
     local value = tonumber(jumpBox.Text)
+
     if value then
         jumpBox.Text = tostring(math.clamp(value, 0, 10000))
     end
@@ -540,6 +638,7 @@ end)
 
 flySpeedBox.FocusLost:Connect(function()
     local value = tonumber(flySpeedBox.Text)
+
     if value then
         flySpeed = math.clamp(value, 30, 10000)
         flySpeedBox.Text = tostring(flySpeed)
@@ -565,6 +664,7 @@ RunService.Heartbeat:Connect(function()
 
     if loopSpeed then
         local value = tonumber(speedBox.Text)
+
         if value then
             speed = math.clamp(value, 16, 10000)
             humanoid.WalkSpeed = speed
@@ -573,6 +673,7 @@ RunService.Heartbeat:Connect(function()
 
     if loopJumpPower then
         local value = tonumber(jumpBox.Text)
+
         if value then
             jumpPower = math.clamp(value, 0, 10000)
             humanoid.UseJumpPower = true
@@ -615,6 +716,7 @@ local function setNoclip(enabled)
                 if originalCollisions[part] == nil then
                     originalCollisions[part] = part.CanCollide
                 end
+
                 part.CanCollide = false
             end
         end
@@ -656,6 +758,7 @@ local function updateESP(otherPlayer)
             highlight.OutlineColor = Color3.new(1, 1, 1)
             highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
             highlight.Parent = character
+
             highlights[otherPlayer] = highlight
         end
     elseif highlights[otherPlayer] then
@@ -707,8 +810,10 @@ local function getTargetAtCrosshair()
     for _, otherPlayer in ipairs(Players:GetPlayers()) do
         if isEnemy(otherPlayer) then
             local character = otherPlayer.Character
-            local root = character and character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            local root = character
+                and character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character
+                and character:FindFirstChildOfClass("Humanoid")
 
             if root and humanoid and humanoid.Health > 0 then
                 local screenPosition, onScreen =
@@ -751,14 +856,17 @@ RunService:BindToRenderStep(
             or not lockedTarget.Character
             or not lockedTarget.Character:FindFirstChild("HumanoidRootPart")
             or not isEnemy(lockedTarget) then
+
             lockedTarget = getTargetAtCrosshair()
         end
 
         if not lockedTarget then return end
 
         local character = lockedTarget.Character
-        local root = character and character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        local root = character
+            and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character
+            and character:FindFirstChildOfClass("Humanoid")
 
         if root and humanoid and humanoid.Health > 0 then
             camera.CFrame = CFrame.lookAt(camera.CFrame.Position, root.Position)
