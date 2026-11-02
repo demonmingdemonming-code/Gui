@@ -1,4 +1,3 @@
-
 -- PRISON LIFE ULTIMATE GUI
 -- LocalScript: StarterPlayer > StarterPlayerScripts
 -- Intended for your own Roblox experience.
@@ -22,6 +21,7 @@ local targetLock = false
 
 local flyEnabled = false
 local flySpeed = 30
+local selectedVersion = nil
 
 local originalCollisions = {}
 local highlights = {}
@@ -85,6 +85,37 @@ local keyButton = makeButton(
     "UNLOCK",
     UDim2.fromOffset(210, 35),
     UDim2.fromOffset(20, 70)
+)
+
+-- VERSION SELECTION
+local selectFrame = Instance.new("Frame")
+selectFrame.Size = UDim2.fromOffset(300, 155)
+selectFrame.Position = UDim2.new(0.5, -150, 0.5, -77)
+selectFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+selectFrame.Visible = false
+selectFrame.Parent = gui
+
+local selectTitle = Instance.new("TextLabel")
+selectTitle.Size = UDim2.new(1, 0, 0, 40)
+selectTitle.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
+selectTitle.Text = "CHOOSE YOUR VERSION"
+selectTitle.TextColor3 = Color3.new(1, 1, 1)
+selectTitle.TextScaled = true
+selectTitle.Font = Enum.Font.GothamBold
+selectTitle.Parent = selectFrame
+
+local pcButton = makeButton(
+    selectFrame,
+    "PC VERSION",
+    UDim2.fromOffset(125, 65),
+    UDim2.fromOffset(15, 65)
+)
+
+local mobileButton = makeButton(
+    selectFrame,
+    "MOBILE VERSION",
+    UDim2.fromOffset(125, 65),
+    UDim2.fromOffset(160, 65)
 )
 
 -- MAIN MENU
@@ -195,6 +226,125 @@ flyHelp.TextScaled = true
 flyHelp.Font = Enum.Font.Gotham
 flyHelp.Text = "Look in the direction you want to fly, then use your movement controls."
 flyHelp.Parent = menu2
+
+-- LAYOUT SYSTEM
+local function applyLayout(mode)
+    selectedVersion = mode
+
+    local isPC = mode == "PC"
+
+    local width = isPC and 760 or 350
+    local height = 270
+
+    main.Size = UDim2.fromOffset(width, height)
+    menu2.Size = UDim2.fromOffset(width, height)
+
+    main.Position = UDim2.new(
+        0.5, -width / 2,
+        0.5, -height / 2
+    )
+
+    menu2.Position = main.Position
+
+    title.Size = UDim2.new(1, -35, 0, 35)
+    menu2Title.Size = UDim2.new(1, -35, 0, 35)
+
+    closeButton.Position = UDim2.new(1, -35, 0, 0)
+    menu2Close.Position = UDim2.new(1, -35, 0, 0)
+
+    if isPC then
+        -- PC: LARGE SIDEWAYS RECTANGLE
+
+        espButton.Size = UDim2.fromOffset(225, 38)
+        espButton.Position = UDim2.fromOffset(15, 50)
+
+        targetButton.Size = UDim2.fromOffset(225, 38)
+        targetButton.Position = UDim2.fromOffset(255, 50)
+
+        noclipButton.Size = UDim2.fromOffset(225, 38)
+        noclipButton.Position = UDim2.fromOffset(495, 50)
+
+        speedBox.Size = UDim2.fromOffset(225, 35)
+        speedBox.Position = UDim2.fromOffset(15, 105)
+
+        speedButton.Size = UDim2.fromOffset(225, 38)
+        speedButton.Position = UDim2.fromOffset(255, 105)
+
+        jumpBox.Size = UDim2.fromOffset(225, 35)
+        jumpBox.Position = UDim2.fromOffset(495, 105)
+
+        jumpButton.Size = UDim2.fromOffset(225, 38)
+        jumpButton.Position = UDim2.fromOffset(15, 160)
+
+        menuSwitch.Size = UDim2.fromOffset(100, 30)
+        menuSwitch.Position = UDim2.fromOffset(15, 225)
+
+        -- PC MENU2
+        backButton.Size = UDim2.fromOffset(225, 38)
+        backButton.Position = UDim2.fromOffset(15, 50)
+
+        flyButton.Size = UDim2.fromOffset(225, 38)
+        flyButton.Position = UDim2.fromOffset(255, 50)
+
+        flySpeedBox.Size = UDim2.fromOffset(225, 35)
+        flySpeedBox.Position = UDim2.fromOffset(495, 50)
+
+        flyHelp.Size = UDim2.fromOffset(225, 90)
+        flyHelp.Position = UDim2.fromOffset(495, 100)
+
+    else
+        -- MOBILE: SMALL SIDEWAYS RECTANGLE
+
+        espButton.Size = UDim2.fromOffset(150, 35)
+        espButton.Position = UDim2.fromOffset(15, 45)
+
+        targetButton.Size = UDim2.fromOffset(150, 35)
+        targetButton.Position = UDim2.fromOffset(185, 45)
+
+        noclipButton.Size = UDim2.fromOffset(150, 35)
+        noclipButton.Position = UDim2.fromOffset(15, 85)
+
+        speedBox.Size = UDim2.fromOffset(150, 35)
+        speedBox.Position = UDim2.fromOffset(185, 85)
+
+        speedButton.Size = UDim2.fromOffset(150, 35)
+        speedButton.Position = UDim2.fromOffset(15, 125)
+
+        jumpBox.Size = UDim2.fromOffset(150, 35)
+        jumpBox.Position = UDim2.fromOffset(185, 125)
+
+        jumpButton.Size = UDim2.fromOffset(150, 35)
+        jumpButton.Position = UDim2.fromOffset(15, 165)
+
+        menuSwitch.Size = UDim2.fromOffset(100, 30)
+        menuSwitch.Position = UDim2.fromOffset(15, 220)
+
+        -- MOBILE MENU2
+        backButton.Size = UDim2.fromOffset(150, 35)
+        backButton.Position = UDim2.fromOffset(15, 45)
+
+        flyButton.Size = UDim2.fromOffset(150, 35)
+        flyButton.Position = UDim2.fromOffset(185, 45)
+
+        flySpeedBox.Size = UDim2.fromOffset(150, 35)
+        flySpeedBox.Position = UDim2.fromOffset(15, 95)
+
+        flyHelp.Size = UDim2.fromOffset(150, 90)
+        flyHelp.Position = UDim2.fromOffset(185, 95)
+    end
+end
+
+pcButton.MouseButton1Click:Connect(function()
+    applyLayout("PC")
+    selectFrame.Visible = false
+    main.Visible = true
+end)
+
+mobileButton.MouseButton1Click:Connect(function()
+    applyLayout("MOBILE")
+    selectFrame.Visible = false
+    main.Visible = true
+end)
 
 -- REOPEN BUTTON
 local reopenButton = makeButton(
@@ -309,37 +459,27 @@ local function startFlying()
         local lookDirection = cameraCF.LookVector
         local rightDirection = cameraCF.RightVector
 
-        local flatForward = Vector3.new(
-            lookDirection.X, 0, lookDirection.Z
-        )
-
-        if flatForward.Magnitude < 0.001 then
-            local rootLook = root.CFrame.LookVector
-            flatForward = Vector3.new(rootLook.X, 0, rootLook.Z)
-        end
-
-        if flatForward.Magnitude > 0.001 then
-            flatForward = flatForward.Unit
-        else
-            flatForward = Vector3.new(0, 0, -1)
-        end
-
-        local flatRight = Vector3.new(
-            rightDirection.X, 0, rightDirection.Z
-        )
-
-        if flatRight.Magnitude > 0.001 then
-            flatRight = flatRight.Unit
-        else
-            flatRight = Vector3.new(1, 0, 0)
-        end
-
         local forwardAmount = 0
         local rightAmount = 0
 
         if UserInputService.TouchEnabled then
             local moveDirection = humanoid.MoveDirection
             if moveDirection.Magnitude > 0.05 then
+                local flatForward = Vector3.new(
+                    lookDirection.X, 0, lookDirection.Z
+                )
+                local flatRight = Vector3.new(
+                    rightDirection.X, 0, rightDirection.Z
+                )
+
+                if flatForward.Magnitude > 0.001 then
+                    flatForward = flatForward.Unit
+                end
+
+                if flatRight.Magnitude > 0.001 then
+                    flatRight = flatRight.Unit
+                end
+
                 forwardAmount = moveDirection:Dot(flatForward)
                 rightAmount = moveDirection:Dot(flatRight)
             end
@@ -640,7 +780,12 @@ menu2Close.MouseButton1Click:Connect(closeGUI)
 
 reopenButton.MouseButton1Click:Connect(function()
     reopenButton.Visible = false
-    main.Visible = true
+
+    if selectedVersion then
+        main.Visible = true
+    else
+        selectFrame.Visible = true
+    end
 end)
 
 -- RESPAWN SUPPORT
@@ -660,7 +805,7 @@ end)
 keyButton.MouseButton1Click:Connect(function()
     if keyBox.Text == KEY then
         keyFrame.Visible = false
-        main.Visible = true
+        selectFrame.Visible = true
     else
         keyBox.Text = ""
         keyBox.PlaceholderText = "Incorrect key"
