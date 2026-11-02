@@ -30,6 +30,7 @@ local lockedTarget = nil
 local flyVelocity = nil
 local flyGyro = nil
 local flyConnection = nil
+local noclipConnection = nil
 
 -- GUI
 local gui = Instance.new("ScreenGui")
@@ -126,7 +127,7 @@ local noclipButton = makeButton(
 )
 
 local speedBox = makeBox(
-    main, "WalkSpeed (16-200)", UDim2.fromOffset(220, 30),
+    main, "WalkSpeed (16-10000)", UDim2.fromOffset(220, 30),
     UDim2.fromOffset(20, 165)
 )
 
@@ -136,7 +137,7 @@ local speedButton = makeButton(
 )
 
 local jumpBox = makeBox(
-    main, "JumpPower (0-200)", UDim2.fromOffset(220, 30),
+    main, "JumpPower (0-10000)", UDim2.fromOffset(220, 30),
     UDim2.fromOffset(20, 238)
 )
 
@@ -179,7 +180,7 @@ local flyButton = makeButton(
 )
 
 local flySpeedBox = makeBox(
-    menu2, "Fly Speed (30-200)", UDim2.fromOffset(220, 30),
+    menu2, "Fly Speed (30-10000)", UDim2.fromOffset(220, 30),
     UDim2.fromOffset(20, 145)
 )
 flySpeedBox.Text = "30"
@@ -266,7 +267,7 @@ local function startFlying()
     end
 
     local requestedSpeed = tonumber(flySpeedBox.Text)
-    flySpeed = math.clamp(requestedSpeed or 30, 30, 200)
+    flySpeed = math.clamp(requestedSpeed or 30, 30, 10000)
     flySpeedBox.Text = tostring(flySpeed)
 
     flyEnabled = true
@@ -289,9 +290,7 @@ local function startFlying()
     flyGyro.Parent = root
 
     flyConnection = RunService.RenderStepped:Connect(function()
-        if not flyEnabled then
-            return
-        end
+        if not flyEnabled then return end
 
         if not root.Parent or not humanoid.Parent then
             stopFlying()
@@ -300,24 +299,18 @@ local function startFlying()
 
         local inputSpeed = tonumber(flySpeedBox.Text)
         if inputSpeed then
-            flySpeed = math.clamp(inputSpeed, 30, 200)
+            flySpeed = math.clamp(inputSpeed, 30, 10000)
         end
 
         camera = workspace.CurrentCamera
-        if not camera then
-            return
-        end
+        if not camera then return end
 
         local cameraCF = camera.CFrame
         local lookDirection = cameraCF.LookVector
         local rightDirection = cameraCF.RightVector
 
-        -- Get a horizontal forward direction.
-        -- The fallback prevents problems when looking almost straight up/down.
         local flatForward = Vector3.new(
-            lookDirection.X,
-            0,
-            lookDirection.Z
+            lookDirection.X, 0, lookDirection.Z
         )
 
         if flatForward.Magnitude < 0.001 then
@@ -332,9 +325,7 @@ local function startFlying()
         end
 
         local flatRight = Vector3.new(
-            rightDirection.X,
-            0,
-            rightDirection.Z
+            rightDirection.X, 0, rightDirection.Z
         )
 
         if flatRight.Magnitude > 0.001 then
@@ -347,34 +338,26 @@ local function startFlying()
         local rightAmount = 0
 
         if UserInputService.TouchEnabled then
-            -- Mobile: use the movement direction from the thumbstick.
             local moveDirection = humanoid.MoveDirection
-
             if moveDirection.Magnitude > 0.05 then
                 forwardAmount = moveDirection:Dot(flatForward)
                 rightAmount = moveDirection:Dot(flatRight)
             end
         else
-            -- Desktop: read WASD directly.
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then
                 forwardAmount += 1
             end
-
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then
                 forwardAmount -= 1
             end
-
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then
                 rightAmount += 1
             end
-
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then
                 rightAmount -= 1
             end
         end
 
-        -- Forward/backward follows the camera's full look direction.
-        -- Sideways movement follows the camera's right direction.
         local velocityDirection =
             (lookDirection * forwardAmount) +
             (rightDirection * rightAmount)
@@ -385,7 +368,6 @@ local function startFlying()
 
         flyVelocity.Velocity = velocityDirection * flySpeed
 
-        -- Face the direction the camera is looking.
         flyGyro.CFrame = CFrame.lookAt(
             root.Position,
             root.Position + lookDirection
@@ -405,21 +387,21 @@ end)
 speedBox.FocusLost:Connect(function()
     local value = tonumber(speedBox.Text)
     if value then
-        speedBox.Text = tostring(math.clamp(value, 16, 200))
+        speedBox.Text = tostring(math.clamp(value, 16, 10000))
     end
 end)
 
 jumpBox.FocusLost:Connect(function()
     local value = tonumber(jumpBox.Text)
     if value then
-        jumpBox.Text = tostring(math.clamp(value, 0, 200))
+        jumpBox.Text = tostring(math.clamp(value, 0, 10000))
     end
 end)
 
 flySpeedBox.FocusLost:Connect(function()
     local value = tonumber(flySpeedBox.Text)
     if value then
-        flySpeed = math.clamp(value, 30, 200)
+        flySpeed = math.clamp(value, 30, 10000)
         flySpeedBox.Text = tostring(flySpeed)
     else
         flySpeedBox.Text = tostring(flySpeed)
@@ -444,7 +426,7 @@ RunService.Heartbeat:Connect(function()
     if loopSpeed then
         local value = tonumber(speedBox.Text)
         if value then
-            speed = math.clamp(value, 16, 200)
+            speed = math.clamp(value, 16, 10000)
             humanoid.WalkSpeed = speed
         end
     end
@@ -452,20 +434,21 @@ RunService.Heartbeat:Connect(function()
     if loopJumpPower then
         local value = tonumber(jumpBox.Text)
         if value then
-            jumpPower = math.clamp(value, 0, 200)
+            jumpPower = math.clamp(value, 0, 10000)
             humanoid.UseJumpPower = true
             humanoid.JumpPower = jumpPower
         end
     end
 end)
 
--- NOCLIP
+-- CLIENT-SIDED NOCLIP
 local function restoreCollisions()
     for part, oldValue in pairs(originalCollisions) do
         if part and part.Parent then
             part.CanCollide = oldValue
         end
     end
+
     table.clear(originalCollisions)
 end
 
@@ -473,26 +456,30 @@ local function setNoclip(enabled)
     noclip = enabled
     noclipButton.Text = "Noclip: " .. (enabled and "ON" or "OFF")
 
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+
     if not enabled then
         restoreCollisions()
+        return
     end
-end
 
-RunService.Stepped:Connect(function()
-    if not noclip then return end
+    noclipConnection = RunService.Stepped:Connect(function()
+        local character = getCharacter()
+        if not character then return end
 
-    local character = getCharacter()
-    if not character then return end
-
-    for _, part in ipairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            if originalCollisions[part] == nil then
-                originalCollisions[part] = part.CanCollide
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                if originalCollisions[part] == nil then
+                    originalCollisions[part] = part.CanCollide
+                end
+                part.CanCollide = false
             end
-            part.CanCollide = false
         end
-    end
-end)
+    end)
+end
 
 noclipButton.MouseButton1Click:Connect(function()
     setNoclip(not noclip)
@@ -500,9 +487,7 @@ end)
 
 -- ENEMY CHECK
 local function isEnemy(otherPlayer)
-    if otherPlayer == player then
-        return false
-    end
+    if otherPlayer == player then return false end
 
     if player.Team and otherPlayer.Team then
         return player.Team ~= otherPlayer.Team
