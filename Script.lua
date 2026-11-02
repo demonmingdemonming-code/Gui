@@ -1,668 +1,514 @@
 
+--==================================================
 -- PRISON LIFE ULTIMATE GUI
 -- LocalScript: StarterPlayer > StarterPlayerScripts
--- Intended for your own Roblox experience.
+--==================================================
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- SETTINGS
 local KEY = "xino7"
-local speed = 16
+
+-- SETTINGS
+local speed = 30
 local jumpPower = 50
-local loopSpeed = false
-local loopJumpPower = false
-local noclip = false
+local flySpeed = 50
+
 local espEnabled = false
-local targetLock = false
-
+local targetLockEnabled = false
+local noclipEnabled = false
 local flyEnabled = false
-local flySpeed = 30
+local loopSpeed = false
+local loopJump = false
+local killAuraEnabled = false
 
-local originalCollisions = {}
-local highlights = {}
-local lockedTarget = nil
-
-local flyVelocity = nil
-local flyGyro = nil
-local flyConnection = nil
-local noclipConnection = nil
+local combatRemote = ReplicatedStorage:WaitForChild("XinoKillAura", 10)
 
 -- GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "PrisonLifeUltimateGUI"
+gui.Name = "XinoPrisonLifeGUI"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function makeButton(parent, text, size, position)
+local function makeFrame(name, size, position)
+    local frame = Instance.new("Frame")
+    frame.Name = name
+    frame.Size = size
+    frame.Position = position
+    frame.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
+    frame.BorderSizePixel = 0
+    frame.Visible = false
+    frame.Parent = gui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+
+    return frame
+end
+
+local function makeButton(parent, text, position, callback)
     local button = Instance.new("TextButton")
-    button.Size = size
+    button.Size = UDim2.new(1, -12, 0, 32)
     button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+    button.BackgroundColor3 = Color3.fromRGB(100, 20, 20)
     button.TextColor3 = Color3.new(1, 1, 1)
     button.Text = text
-    button.TextScaled = true
+    button.TextSize = 14
     button.Font = Enum.Font.GothamBold
     button.Parent = parent
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = button
+
+    button.MouseButton1Click:Connect(callback)
     return button
 end
 
-local function makeBox(parent, placeholder, size, position)
+local function makeBox(parent, placeholder, position)
     local box = Instance.new("TextBox")
-    box.Size = size
+    box.Size = UDim2.new(1, -12, 0, 30)
     box.Position = position
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.BackgroundColor3 = Color3.fromRGB(45, 30, 30)
     box.TextColor3 = Color3.new(1, 1, 1)
+    box.PlaceholderColor3 = Color3.fromRGB(190, 190, 190)
     box.PlaceholderText = placeholder
     box.Text = ""
-    box.ClearTextOnFocus = false
-    box.TextScaled = true
+    box.TextSize = 14
     box.Font = Enum.Font.Gotham
+    box.ClearTextOnFocus = false
     box.Parent = parent
     return box
 end
 
--- KEY GATE
-local keyFrame = Instance.new("Frame")
-keyFrame.Size = UDim2.fromOffset(250, 130)
-keyFrame.Position = UDim2.new(0.5, -125, 0.5, -65)
-keyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-keyFrame.Parent = gui
-
-local keyBox = makeBox(
-    keyFrame,
-    "Enter key",
-    UDim2.fromOffset(210, 35),
-    UDim2.fromOffset(20, 20)
-)
-
-local keyButton = makeButton(
-    keyFrame,
-    "UNLOCK",
-    UDim2.fromOffset(210, 35),
-    UDim2.fromOffset(20, 70)
-)
-
--- MAIN MENU
-local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(260, 390)
-main.Position = UDim2.new(0, 30, 0.3, 0)
-main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-main.Active = true
-main.Draggable = true
-main.Visible = false
-main.Parent = gui
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -32, 0, 35)
-title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
-title.Text = "PRISON LIFE ULTIMATE GUI"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextScaled = true
-title.Font = Enum.Font.GothamBold
-title.Parent = main
-
-local closeButton = makeButton(
-    main, "X", UDim2.fromOffset(32, 35), UDim2.new(1, -32, 0, 0)
-)
-
-local menuSwitch = makeButton(
-    main, "MENU2", UDim2.fromOffset(65, 30), UDim2.new(0, -67, 0, 42)
-)
-
-local espButton = makeButton(
-    main, "ESP: OFF", UDim2.fromOffset(220, 32), UDim2.fromOffset(20, 45)
-)
-
-local targetButton = makeButton(
-    main, "Target Lock: OFF", UDim2.fromOffset(220, 32), UDim2.fromOffset(20, 83)
-)
-
-local noclipButton = makeButton(
-    main, "Noclip: OFF", UDim2.fromOffset(220, 32), UDim2.fromOffset(20, 121)
-)
-
-local speedBox = makeBox(
-    main, "WalkSpeed (16-10000)", UDim2.fromOffset(220, 30),
-    UDim2.fromOffset(20, 165)
-)
-
-local speedButton = makeButton(
-    main, "Loop Speed: OFF", UDim2.fromOffset(220, 32),
-    UDim2.fromOffset(20, 200)
-)
-
-local jumpBox = makeBox(
-    main, "JumpPower (0-10000)", UDim2.fromOffset(220, 30),
-    UDim2.fromOffset(20, 238)
-)
-
-local jumpButton = makeButton(
-    main, "Loop JumpPower: OFF", UDim2.fromOffset(220, 32),
-    UDim2.fromOffset(20, 273)
-)
-
--- MENU2
-local menu2 = Instance.new("Frame")
-menu2.Size = UDim2.fromOffset(260, 390)
-menu2.Position = main.Position
-menu2.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-menu2.Active = true
-menu2.Draggable = true
-menu2.Visible = false
-menu2.Parent = gui
-
-local menu2Title = Instance.new("TextLabel")
-menu2Title.Size = UDim2.new(1, -32, 0, 35)
-menu2Title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
-menu2Title.Text = "MENU2 - MOVEMENT"
-menu2Title.TextColor3 = Color3.new(1, 1, 1)
-menu2Title.TextScaled = true
-menu2Title.Font = Enum.Font.GothamBold
-menu2Title.Parent = menu2
-
-local menu2Close = makeButton(
-    menu2, "X", UDim2.fromOffset(32, 35), UDim2.new(1, -32, 0, 0)
-)
-
-local backButton = makeButton(
-    menu2, "BACK TO MENU", UDim2.fromOffset(220, 32),
-    UDim2.fromOffset(20, 50)
-)
-
-local flyButton = makeButton(
-    menu2, "Fly: OFF", UDim2.fromOffset(220, 35),
-    UDim2.fromOffset(20, 100)
-)
-
-local flySpeedBox = makeBox(
-    menu2, "Fly Speed (30-10000)", UDim2.fromOffset(220, 30),
-    UDim2.fromOffset(20, 145)
-)
-flySpeedBox.Text = "30"
-
-local flyHelp = Instance.new("TextLabel")
-flyHelp.Size = UDim2.fromOffset(220, 75)
-flyHelp.Position = UDim2.fromOffset(20, 190)
-flyHelp.BackgroundTransparency = 1
-flyHelp.TextColor3 = Color3.fromRGB(220, 220, 220)
-flyHelp.TextWrapped = true
-flyHelp.TextScaled = true
-flyHelp.Font = Enum.Font.Gotham
-flyHelp.Text = "Look in the direction you want to fly, then use your movement controls."
-flyHelp.Parent = menu2
-
--- REOPEN BUTTON
-local reopenButton = makeButton(
-    gui, "OPEN GUI", UDim2.fromOffset(110, 35), UDim2.fromOffset(10, 10)
-)
-reopenButton.Visible = false
-
--- MENU SWITCHING
-menuSwitch.MouseButton1Click:Connect(function()
-    menu2.Position = main.Position
-    main.Visible = false
-    menu2.Visible = true
-end)
-
-backButton.MouseButton1Click:Connect(function()
-    menu2.Visible = false
-    main.Visible = true
-end)
-
--- CHARACTER HELPERS
-local function getCharacter()
-    return player.Character
+local function makeTitle(parent, text)
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 35)
+    title.BackgroundColor3 = Color3.fromRGB(130, 15, 15)
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Text = text
+    title.TextSize = 16
+    title.Font = Enum.Font.GothamBold
+    title.Parent = parent
+    return title
 end
 
-local function getHumanoid()
-    local character = getCharacter()
-    return character and character:FindFirstChildOfClass("Humanoid")
-end
+local menu = makeFrame("MENU", UDim2.fromOffset(220, 390), UDim2.new(0, 20, 0.25, 0))
+local menu2 = makeFrame("MENU2", UDim2.fromOffset(220, 300), UDim2.new(0, 250, 0.25, 0))
+local menu3 = makeFrame("MENU3", UDim2.fromOffset(220, 220), UDim2.new(0, 480, 0.25, 0))
 
-local function getRoot()
-    local character = getCharacter()
-    return character and character:FindFirstChild("HumanoidRootPart")
-end
+makeTitle(menu, "XINO'S ULTIMATE GUI")
+makeTitle(menu2, "MOVEMENT")
+makeTitle(menu3, "COMBAT")
 
--- FLY CLEANUP
-local function stopFlying()
-    flyEnabled = false
-    flyButton.Text = "Fly: OFF"
+-- Dragging
+local function makeDraggable(frame, handle)
+    local dragging = false
+    local dragStart, startPosition
 
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
-
-    if flyVelocity then
-        flyVelocity:Destroy()
-        flyVelocity = nil
-    end
-
-    if flyGyro then
-        flyGyro:Destroy()
-        flyGyro = nil
-    end
-
-    local humanoid = getHumanoid()
-    if humanoid then
-        humanoid.AutoRotate = true
-        humanoid.PlatformStand = false
-    end
-end
-
--- FLY START
-local function startFlying()
-    local humanoid = getHumanoid()
-    local root = getRoot()
-
-    if not humanoid or not root then
-        flyButton.Text = "Fly: NO CHARACTER"
-        return
-    end
-
-    local requestedSpeed = tonumber(flySpeedBox.Text)
-    flySpeed = math.clamp(requestedSpeed or 30, 30, 10000)
-    flySpeedBox.Text = tostring(flySpeed)
-
-    flyEnabled = true
-    flyButton.Text = "Fly: ON"
-    humanoid.AutoRotate = false
-    humanoid.PlatformStand = false
-
-    flyVelocity = Instance.new("BodyVelocity")
-    flyVelocity.Name = "LocalFlyVelocity"
-    flyVelocity.MaxForce = Vector3.new(1000000, 1000000, 1000000)
-    flyVelocity.P = 25000
-    flyVelocity.Velocity = Vector3.zero
-    flyVelocity.Parent = root
-
-    flyGyro = Instance.new("BodyGyro")
-    flyGyro.Name = "LocalFlyGyro"
-    flyGyro.MaxTorque = Vector3.new(1000000, 1000000, 1000000)
-    flyGyro.P = 15000
-    flyGyro.CFrame = root.CFrame
-    flyGyro.Parent = root
-
-    flyConnection = RunService.RenderStepped:Connect(function()
-        if not flyEnabled then return end
-
-        if not root.Parent or not humanoid.Parent then
-            stopFlying()
-            return
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPosition = frame.Position
         end
-
-        local inputSpeed = tonumber(flySpeedBox.Text)
-        if inputSpeed then
-            flySpeed = math.clamp(inputSpeed, 30, 10000)
-        end
-
-        camera = workspace.CurrentCamera
-        if not camera then return end
-
-        local cameraCF = camera.CFrame
-        local lookDirection = cameraCF.LookVector
-        local rightDirection = cameraCF.RightVector
-
-        local flatForward = Vector3.new(
-            lookDirection.X, 0, lookDirection.Z
-        )
-
-        if flatForward.Magnitude < 0.001 then
-            local rootLook = root.CFrame.LookVector
-            flatForward = Vector3.new(rootLook.X, 0, rootLook.Z)
-        end
-
-        if flatForward.Magnitude > 0.001 then
-            flatForward = flatForward.Unit
-        else
-            flatForward = Vector3.new(0, 0, -1)
-        end
-
-        local flatRight = Vector3.new(
-            rightDirection.X, 0, rightDirection.Z
-        )
-
-        if flatRight.Magnitude > 0.001 then
-            flatRight = flatRight.Unit
-        else
-            flatRight = Vector3.new(1, 0, 0)
-        end
-
-        local forwardAmount = 0
-        local rightAmount = 0
-
-        if UserInputService.TouchEnabled then
-            local moveDirection = humanoid.MoveDirection
-            if moveDirection.Magnitude > 0.05 then
-                forwardAmount = moveDirection:Dot(flatForward)
-                rightAmount = moveDirection:Dot(flatRight)
-            end
-        else
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                forwardAmount += 1
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                forwardAmount -= 1
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                rightAmount += 1
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                rightAmount -= 1
-            end
-        end
-
-        local velocityDirection =
-            (lookDirection * forwardAmount) +
-            (rightDirection * rightAmount)
-
-        if velocityDirection.Magnitude > 1 then
-            velocityDirection = velocityDirection.Unit
-        end
-
-        flyVelocity.Velocity = velocityDirection * flySpeed
-
-        flyGyro.CFrame = CFrame.lookAt(
-            root.Position,
-            root.Position + lookDirection
-        )
     end)
-end
 
-flyButton.MouseButton1Click:Connect(function()
-    if flyEnabled then
-        stopFlying()
-    else
-        startFlying()
-    end
-end)
-
--- SPEED BOX VALIDATION
-speedBox.FocusLost:Connect(function()
-    local value = tonumber(speedBox.Text)
-    if value then
-        speedBox.Text = tostring(math.clamp(value, 16, 10000))
-    end
-end)
-
-jumpBox.FocusLost:Connect(function()
-    local value = tonumber(jumpBox.Text)
-    if value then
-        jumpBox.Text = tostring(math.clamp(value, 0, 10000))
-    end
-end)
-
-flySpeedBox.FocusLost:Connect(function()
-    local value = tonumber(flySpeedBox.Text)
-    if value then
-        flySpeed = math.clamp(value, 30, 10000)
-        flySpeedBox.Text = tostring(flySpeed)
-    else
-        flySpeedBox.Text = tostring(flySpeed)
-    end
-end)
-
--- LOOP SPEED / JUMP
-speedButton.MouseButton1Click:Connect(function()
-    loopSpeed = not loopSpeed
-    speedButton.Text = "Loop Speed: " .. (loopSpeed and "ON" or "OFF")
-end)
-
-jumpButton.MouseButton1Click:Connect(function()
-    loopJumpPower = not loopJumpPower
-    jumpButton.Text = "Loop JumpPower: " .. (loopJumpPower and "ON" or "OFF")
-end)
-
-RunService.Heartbeat:Connect(function()
-    local humanoid = getHumanoid()
-    if not humanoid then return end
-
-    if loopSpeed then
-        local value = tonumber(speedBox.Text)
-        if value then
-            speed = math.clamp(value, 16, 10000)
-            humanoid.WalkSpeed = speed
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (
+            input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch
+        ) then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPosition.X.Scale,
+                startPosition.X.Offset + delta.X,
+                startPosition.Y.Scale,
+                startPosition.Y.Offset + delta.Y
+            )
         end
-    end
+    end)
 
-    if loopJumpPower then
-        local value = tonumber(jumpBox.Text)
-        if value then
-            jumpPower = math.clamp(value, 0, 10000)
-            humanoid.UseJumpPower = true
-            humanoid.JumpPower = jumpPower
-        end
-    end
-end)
-
--- CLIENT-SIDED NOCLIP
-local function restoreCollisions()
-    for part, oldValue in pairs(originalCollisions) do
-        if part and part.Parent then
-            part.CanCollide = oldValue
-        end
-    end
-
-    table.clear(originalCollisions)
-end
-
-local function setNoclip(enabled)
-    noclip = enabled
-    noclipButton.Text = "Noclip: " .. (enabled and "ON" or "OFF")
-
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-
-    if not enabled then
-        restoreCollisions()
-        return
-    end
-
-    noclipConnection = RunService.Stepped:Connect(function()
-        local character = getCharacter()
-        if not character then return end
-
-        for _, part in ipairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                if originalCollisions[part] == nil then
-                    originalCollisions[part] = part.CanCollide
-                end
-                part.CanCollide = false
-            end
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
         end
     end)
 end
 
-noclipButton.MouseButton1Click:Connect(function()
-    setNoclip(not noclip)
-end)
+makeDraggable(menu, menu:FindFirstChildOfClass("TextLabel"))
+makeDraggable(menu2, menu2:FindFirstChildOfClass("TextLabel"))
+makeDraggable(menu3, menu3:FindFirstChildOfClass("TextLabel"))
 
--- ENEMY CHECK
-local function isEnemy(otherPlayer)
-    if otherPlayer == player then return false end
+local function isEnemy(other)
+    if other == player then return false end
+    if not other.Character then return false end
 
-    if player.Team and otherPlayer.Team then
-        return player.Team ~= otherPlayer.Team
+    if player.Team and other.Team then
+        return player.Team ~= other.Team
     end
 
     return true
 end
 
 -- ESP
-local function updateESP(otherPlayer)
-    if otherPlayer == player then return end
+local highlights = {}
 
-    local character = otherPlayer.Character
-    if not character then return end
-
-    if espEnabled then
-        if not highlights[otherPlayer]
-            or highlights[otherPlayer].Parent ~= character then
-
-            if highlights[otherPlayer] then
-                highlights[otherPlayer]:Destroy()
+local function updateESP()
+    for _, other in ipairs(Players:GetPlayers()) do
+        if other ~= player and other.Character and isEnemy(other) then
+            if espEnabled then
+                local highlight = highlights[other]
+                if not highlight or highlight.Parent ~= other.Character then
+                    if highlight then highlight:Destroy() end
+                    highlight = Instance.new("Highlight")
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineColor = Color3.new(1, 1, 1)
+                    highlight.FillTransparency = 0.5
+                    highlight.Parent = other.Character
+                    highlights[other] = highlight
+                end
+            elseif highlights[other] then
+                highlights[other]:Destroy()
+                highlights[other] = nil
             end
-
-            local highlight = Instance.new("Highlight")
-            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-            highlight.OutlineColor = Color3.new(1, 1, 1)
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.Parent = character
-            highlights[otherPlayer] = highlight
         end
-    elseif highlights[otherPlayer] then
-        highlights[otherPlayer]:Destroy()
-        highlights[otherPlayer] = nil
     end
 end
 
-local function refreshESP()
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
-        updateESP(otherPlayer)
+Players.PlayerRemoving:Connect(function(other)
+    if highlights[other] then
+        highlights[other]:Destroy()
+        highlights[other] = nil
     end
-end
+end)
 
-espButton.MouseButton1Click:Connect(function()
+-- MAIN MENU
+local y = 42
+
+makeButton(menu, "ESP: OFF", UDim2.fromOffset(6, y), function(button)
     espEnabled = not espEnabled
-    espButton.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
-    refreshESP()
+    button.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
+    if not espEnabled then
+        for _, h in pairs(highlights) do h:Destroy() end
+        table.clear(highlights)
+    end
+end).Name = "ESPButton"
+y = y + 38
+
+makeButton(menu, "Target Lock: OFF", UDim2.fromOffset(6, y), function(button)
+    targetLockEnabled = not targetLockEnabled
+    button.Text = "Target Lock: " .. (targetLockEnabled and "ON" or "OFF")
+end)
+y = y + 38
+
+makeButton(menu, "Noclip: OFF", UDim2.fromOffset(6, y), function(button)
+    noclipEnabled = not noclipEnabled
+    button.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
+end)
+y = y + 38
+
+local speedBox = makeBox(menu, "WalkSpeed (max 10000)", UDim2.fromOffset(6, y))
+y = y + 34
+
+makeButton(menu, "Set WalkSpeed", UDim2.fromOffset(6, y), function()
+    local n = tonumber(speedBox.Text)
+    if n then speed = math.clamp(n, 16, 10000) end
+end)
+y = y + 36
+
+makeButton(menu, "Loop Speed: OFF", UDim2.fromOffset(6, y), function(button)
+    loopSpeed = not loopSpeed
+    button.Text = "Loop Speed: " .. (loopSpeed and "ON" or "OFF")
+end)
+y = y + 38
+
+local jumpBox = makeBox(menu, "JumpPower (max 10000)", UDim2.fromOffset(6, y))
+y = y + 34
+
+makeButton(menu, "Set JumpPower", UDim2.fromOffset(6, y), function()
+    local n = tonumber(jumpBox.Text)
+    if n then jumpPower = math.clamp(n, 0, 10000) end
+end)
+y = y + 36
+
+makeButton(menu, "Loop Jump: OFF", UDim2.fromOffset(6, y), function(button)
+    loopJump = not loopJump
+    button.Text = "Loop Jump: " .. (loopJump and "ON" or "OFF")
+end)
+y = y + 38
+
+makeButton(menu, "MENU 2", UDim2.fromOffset(6, y), function()
+    menu2.Visible = not menu2.Visible
 end)
 
-local function setupPlayer(otherPlayer)
-    if otherPlayer == player then return end
+-- MENU 2: FLY
+local flyButton = makeButton(menu2, "Fly: OFF", UDim2.fromOffset(6, 45), function()
+    flyEnabled = not flyEnabled
+    flyButton.Text = "Fly: " .. (flyEnabled and "ON" or "OFF")
+end)
 
-    otherPlayer.CharacterAdded:Connect(function()
-        task.wait(0.5)
-        updateESP(otherPlayer)
-    end)
+local flyBox = makeBox(menu2, "Fly speed (max 10000)", UDim2.fromOffset(6, 85))
+makeButton(menu2, "Set Fly Speed", UDim2.fromOffset(6, 120), function()
+    local n = tonumber(flyBox.Text)
+    if n then flySpeed = math.clamp(n, 1, 10000) end
+end)
+
+makeButton(menu2, "MENU 3", UDim2.fromOffset(6, 158), function()
+    menu3.Visible = not menu3.Visible
+end)
+
+makeButton(menu2, "CLOSE MENUS", UDim2.fromOffset(6, 196), function()
+    menu.Visible = false
+    menu2.Visible = false
+    menu3.Visible = false
+end)
+
+-- MENU 3: COMBAT
+local auraButton = makeButton(menu3, "Kill Aura: OFF", UDim2.fromOffset(6, 45), function()
+    killAuraEnabled = not killAuraEnabled
+    auraButton.Text = "Kill Aura: " .. (killAuraEnabled and "ON" or "OFF")
+end)
+
+local selectedTarget = nil
+
+local function getPlayersList()
+    local list = {}
+    for _, other in ipairs(Players:GetPlayers()) do
+        if isEnemy(other) and other.Character
+        and other.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(list, other)
+        end
+    end
+    return list
 end
 
-for _, otherPlayer in ipairs(Players:GetPlayers()) do
-    setupPlayer(otherPlayer)
+local function selectNextTarget()
+    local list = getPlayersList()
+    if #list == 0 then
+        selectedTarget = nil
+        return
+    end
+
+    local index = 0
+    for i, other in ipairs(list) do
+        if other == selectedTarget then index = i break end
+    end
+
+    index = (index % #list) + 1
+    selectedTarget = list[index]
 end
 
-Players.PlayerAdded:Connect(setupPlayer)
+local targetLabel = Instance.new("TextLabel")
+targetLabel.Size = UDim2.new(1, -12, 0, 28)
+targetLabel.Position = UDim2.fromOffset(6, 84)
+targetLabel.BackgroundColor3 = Color3.fromRGB(45, 30, 30)
+targetLabel.TextColor3 = Color3.new(1, 1, 1)
+targetLabel.Text = "Target: none"
+targetLabel.Parent = menu3
 
-Players.PlayerRemoving:Connect(function(otherPlayer)
-    if highlights[otherPlayer] then
-        highlights[otherPlayer]:Destroy()
-        highlights[otherPlayer] = nil
+makeButton(menu3, "Select Next Player", UDim2.fromOffset(6, 116), function()
+    selectNextTarget()
+    targetLabel.Text = "Target: " .. (selectedTarget and selectedTarget.Name or "none")
+end)
+
+makeButton(menu3, "Teleport To Player", UDim2.fromOffset(6, 154), function()
+    if not selectedTarget or not selectedTarget.Character then return end
+
+    local myChar = player.Character
+    local theirRoot = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+    if myRoot and theirRoot then
+        myRoot.CFrame = theirRoot.CFrame * CFrame.new(0, 0, 3)
     end
 end)
 
--- FIND ENEMY NEAREST TO CROSSHAIR
-local function getTargetAtCrosshair()
-    local bestTarget = nil
-    local bestDistance = 180
-    local center = camera.ViewportSize / 2
+-- TARGET LOCK
+local function getNearestEnemy()
+    local myChar = player.Character
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return nil end
 
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
-        if isEnemy(otherPlayer) then
-            local character = otherPlayer.Character
-            local root = character and character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    local nearest, nearestDistance = nil, math.huge
 
-            if root and humanoid and humanoid.Health > 0 then
-                local screenPosition, onScreen =
-                    camera:WorldToViewportPoint(root.Position)
+    for _, other in ipairs(Players:GetPlayers()) do
+        if isEnemy(other) and other.Character then
+            local root = other.Character:FindFirstChild("HumanoidRootPart")
+            local hum = other.Character:FindFirstChildOfClass("Humanoid")
 
-                if onScreen and screenPosition.Z > 0 then
-                    local distance = (
-                        Vector2.new(screenPosition.X, screenPosition.Y) - center
-                    ).Magnitude
-
-                    if distance < bestDistance then
-                        bestDistance = distance
-                        bestTarget = otherPlayer
-                    end
+            if root and hum and hum.Health > 0 then
+                local distance = (root.Position - myRoot.Position).Magnitude
+                if distance < nearestDistance then
+                    nearest = other
+                    nearestDistance = distance
                 end
             end
         end
     end
 
-    return bestTarget
+    return nearest
 end
 
--- TARGET LOCK
-targetButton.MouseButton1Click:Connect(function()
-    targetLock = not targetLock
-    lockedTarget = nil
-    targetButton.Text = "Target Lock: " .. (targetLock and "ON" or "OFF")
-end)
+-- FLY MOVEMENT
+local bodyVelocity
+local bodyGyro
 
-RunService:BindToRenderStep(
-    "PrisonLifeTargetCamera",
-    Enum.RenderPriority.Camera.Value + 1,
-    function()
-        if not targetLock then return end
+local function stopFly()
+    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+end
 
-        camera = workspace.CurrentCamera or camera
-        if not camera then return end
+local function updateFly()
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-        if not lockedTarget
-            or not lockedTarget.Character
-            or not lockedTarget.Character:FindFirstChild("HumanoidRootPart")
-            or not isEnemy(lockedTarget) then
-            lockedTarget = getTargetAtCrosshair()
-        end
+    if not flyEnabled or not root or not hum then
+        stopFly()
+        return
+    end
 
-        if not lockedTarget then return end
+    if not bodyVelocity then
+        bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        bodyVelocity.Parent = root
 
-        local character = lockedTarget.Character
-        local root = character and character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        bodyGyro = Instance.new("BodyGyro")
+        bodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        bodyGyro.P = 10000
+        bodyGyro.Parent = root
+    end
 
-        if root and humanoid and humanoid.Health > 0 then
-            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, root.Position)
-        else
-            lockedTarget = nil
+    local look = camera.CFrame.LookVector
+    local right = camera.CFrame.RightVector
+
+    local flatForward = Vector3.new(look.X, 0, look.Z)
+    if flatForward.Magnitude < 0.001 then
+        flatForward = Vector3.new(0, 0, -1)
+    else
+        flatForward = flatForward.Unit
+    end
+
+    local flatRight = Vector3.new(right.X, 0, right.Z)
+    if flatRight.Magnitude < 0.001 then
+        flatRight = Vector3.new(1, 0, 0)
+    else
+        flatRight = flatRight.Unit
+    end
+
+    local direction = Vector3.zero
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction += look end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction -= look end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction += flatRight end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction -= flatRight end
+    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction += Vector3.yAxis end
+    if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction -= Vector3.yAxis end
+
+    if UserInputService.TouchEnabled then
+        local move = hum.MoveDirection
+        direction += flatForward * move:Dot(flatForward)
+        direction += flatRight * move:Dot(flatRight)
+    end
+
+    if direction.Magnitude > 0 then
+        direction = direction.Unit * flySpeed
+    end
+
+    bodyVelocity.Velocity = direction
+    bodyGyro.CFrame = camera.CFrame
+end
+
+-- MAIN UPDATE
+local auraTimer = 0
+
+RunService.Heartbeat:Connect(function(dt)
+    updateESP()
+
+    local char = player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+
+    if hum then
+        if loopSpeed then hum.WalkSpeed = speed end
+        if loopJump then hum.JumpPower = jumpPower end
+    end
+
+    if noclipEnabled and char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
         end
     end
-)
+
+    updateFly()
+
+    if targetLockEnabled then
+        local target = getNearestEnemy()
+        local targetRoot = target and target.Character
+            and target.Character:FindFirstChild("HumanoidRootPart")
+
+        if targetRoot then
+            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetRoot.Position)
+        end
+    end
+
+    auraTimer += dt
+    if killAuraEnabled and auraTimer >= 0.5 then
+        auraTimer = 0
+
+        if combatRemote and root then
+            local target = getNearestEnemy()
+            local targetRoot = target and target.Character
+                and target.Character:FindFirstChild("HumanoidRootPart")
+
+            if targetRoot and (targetRoot.Position - root.Position).Magnitude <= 50 then
+                combatRemote:FireServer(target)
+            end
+        end
+    end
+end)
+
+-- RESPAWN CLEANUP
+player.CharacterAdded:Connect(function()
+    stopFly()
+end)
 
 -- CLOSE / REOPEN
-local function closeGUI()
-    main.Visible = false
-    menu2.Visible = false
-    reopenButton.Visible = true
-end
+local reopen = Instance.new("TextButton")
+reopen.Size = UDim2.fromOffset(65, 30)
+reopen.Position = UDim2.new(0, 10, 0.5, 0)
+reopen.BackgroundColor3 = Color3.fromRGB(130, 15, 15)
+reopen.TextColor3 = Color3.new(1, 1, 1)
+reopen.Text = "xino"
+reopen.Parent = gui
 
-closeButton.MouseButton1Click:Connect(closeGUI)
-menu2Close.MouseButton1Click:Connect(closeGUI)
-
-reopenButton.MouseButton1Click:Connect(function()
-    reopenButton.Visible = false
-    main.Visible = true
+reopen.MouseButton1Click:Connect(function()
+    menu.Visible = not menu.Visible
 end)
 
--- RESPAWN SUPPORT
-player.CharacterAdded:Connect(function(character)
-    stopFlying()
-    restoreCollisions()
+-- KEY GATE
+local keyFrame = makeFrame("KEY", UDim2.fromOffset(220, 120), UDim2.new(0.5, -110, 0.5, -60))
+keyFrame.Visible = true
+makeTitle(keyFrame, "ENTER KEY")
 
-    character:WaitForChild("Humanoid")
-
-    if espEnabled then
-        task.wait(0.5)
-        refreshESP()
-    end
-end)
-
--- KEY CHECK
-keyButton.MouseButton1Click:Connect(function()
+local keyBox = makeBox(keyFrame, "Enter key", UDim2.fromOffset(6, 42))
+makeButton(keyFrame, "UNLOCK", UDim2.fromOffset(6, 78), function()
     if keyBox.Text == KEY then
         keyFrame.Visible = false
-        main.Visible = true
+        menu.Visible = true
     else
         keyBox.Text = ""
-        keyBox.PlaceholderText = "Incorrect key"
+        keyBox.PlaceholderText = "Wrong key!"
     end
 end)
