@@ -35,6 +35,8 @@ gui.Name = "XinoPrisonLifeGUI"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
+local mobileMode = false
+
 local function makeFrame(name, size, position)
     local frame = Instance.new("Frame")
     frame.Name = name
@@ -52,14 +54,14 @@ local function makeFrame(name, size, position)
     return frame
 end
 
-local function makeButton(parent, text, position, callback)
+local function makeButton(parent, text, position, callback, height)
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, -12, 0, 32)
+    button.Size = UDim2.new(1, -12, 0, height or 30)
     button.Position = position
     button.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
     button.TextColor3 = Color3.new(1, 1, 1)
     button.Text = text
-    button.TextSize = 14
+    button.TextSize = 13
     button.Font = Enum.Font.GothamBold
     button.Parent = parent
 
@@ -73,14 +75,14 @@ end
 
 local function makeBox(parent, placeholder, position)
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, -12, 0, 30)
+    box.Size = UDim2.new(1, -12, 0, 28)
     box.Position = position
     box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     box.TextColor3 = Color3.new(1, 1, 1)
     box.PlaceholderColor3 = Color3.fromRGB(190, 190, 190)
     box.PlaceholderText = placeholder
     box.Text = ""
-    box.TextSize = 14
+    box.TextSize = 13
     box.Font = Enum.Font.Gotham
     box.ClearTextOnFocus = false
     box.Parent = parent
@@ -89,39 +91,31 @@ end
 
 local function makeTitle(parent, text)
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 35)
+    title.Size = UDim2.new(1, 0, 0, 32)
     title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
     title.TextColor3 = Color3.new(1, 1, 1)
     title.Text = text
-    title.TextSize = 16
+    title.TextSize = 15
     title.Font = Enum.Font.GothamBold
     title.Parent = parent
     return title
 end
 
--- ALL MENUS ON LEFT
+-- MENUS
 local menu = makeFrame(
     "MENU",
-    UDim2.fromOffset(220, 420),
-    UDim2.new(0, 20, 0.25, 0)
+    UDim2.fromOffset(230, 390),
+    UDim2.new(0, 10, 0, 10)
 )
 
 local menu2 = makeFrame(
     "MENU2",
-    UDim2.fromOffset(220, 300),
-    UDim2.new(0, 20, 0.25, 0)
-)
-
--- MENU 3 BELOW MENU 2
-local menu3 = makeFrame(
-    "MENU3",
-    UDim2.fromOffset(220, 240),
-    UDim2.new(0, 20, 0.25, 320)
+    UDim2.fromOffset(230, 350),
+    UDim2.new(0, 10, 0, 410)
 )
 
 makeTitle(menu, "XINO'S ULTIMATE GUI")
-makeTitle(menu2, "MOVEMENT")
-makeTitle(menu3, "COMBAT")
+makeTitle(menu2, "MOVEMENT & COMBAT")
 
 -- DRAGGING
 local function makeDraggable(frame, handle)
@@ -144,7 +138,6 @@ local function makeDraggable(frame, handle)
             or input.UserInputType == Enum.UserInputType.Touch
         ) then
             local delta = input.Position - dragStart
-
             frame.Position = UDim2.new(
                 startPosition.X.Scale,
                 startPosition.X.Offset + delta.X,
@@ -164,7 +157,6 @@ end
 
 makeDraggable(menu, menu:FindFirstChildOfClass("TextLabel"))
 makeDraggable(menu2, menu2:FindFirstChildOfClass("TextLabel"))
-makeDraggable(menu3, menu3:FindFirstChildOfClass("TextLabel"))
 
 local function isEnemy(other)
     if other == player then return false end
@@ -214,7 +206,7 @@ Players.PlayerRemoving:Connect(function(other)
 end)
 
 -- MAIN MENU
-local y = 42
+local y = 40
 
 local espButton
 espButton = makeButton(menu, "ESP: OFF", UDim2.fromOffset(6, y), function()
@@ -228,104 +220,94 @@ espButton = makeButton(menu, "ESP: OFF", UDim2.fromOffset(6, y), function()
         table.clear(highlights)
     end
 end)
-y = y + 38
+y += 34
 
 local targetButton
 targetButton = makeButton(menu, "Target Lock: OFF", UDim2.fromOffset(6, y), function()
     targetLockEnabled = not targetLockEnabled
     targetButton.Text = "Target Lock: " .. (targetLockEnabled and "ON" or "OFF")
 end)
-y = y + 38
+y += 34
 
 local noclipButton
 noclipButton = makeButton(menu, "Noclip: OFF", UDim2.fromOffset(6, y), function()
     noclipEnabled = not noclipEnabled
     noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
 end)
-y = y + 38
+y += 34
 
 local speedBox = makeBox(menu, "WalkSpeed (max 10000)", UDim2.fromOffset(6, y))
-y = y + 34
+y += 31
 
 makeButton(menu, "Set WalkSpeed", UDim2.fromOffset(6, y), function()
     local n = tonumber(speedBox.Text)
     if n then
         speed = math.clamp(n, 16, 10000)
+        local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = speed end
     end
 end)
-y = y + 36
+y += 34
 
 local speedLoopButton
 speedLoopButton = makeButton(menu, "Loop Speed: OFF", UDim2.fromOffset(6, y), function()
     loopSpeed = not loopSpeed
     speedLoopButton.Text = "Loop Speed: " .. (loopSpeed and "ON" or "OFF")
 end)
-y = y + 38
+y += 34
 
 local jumpBox = makeBox(menu, "JumpPower (max 10000)", UDim2.fromOffset(6, y))
-y = y + 34
+y += 31
 
 makeButton(menu, "Set JumpPower", UDim2.fromOffset(6, y), function()
     local n = tonumber(jumpBox.Text)
     if n then
         jumpPower = math.clamp(n, 0, 10000)
+        local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.JumpPower = jumpPower end
     end
 end)
-y = y + 36
+y += 34
 
 local jumpLoopButton
 jumpLoopButton = makeButton(menu, "Loop Jump: OFF", UDim2.fromOffset(6, y), function()
     loopJump = not loopJump
     jumpLoopButton.Text = "Loop Jump: " .. (loopJump and "ON" or "OFF")
 end)
-y = y + 38
 
-makeButton(menu, "MENU 2", UDim2.fromOffset(6, y), function()
-    menu.Visible = false
-    menu2.Visible = true
-    menu3.Visible = false
-end)
-
--- MENU 2: MOVEMENT
+-- MENU 2: FLY AND KILL AURA
 local flyButton
-flyButton = makeButton(menu2, "Fly: OFF", UDim2.fromOffset(6, 45), function()
+flyButton = makeButton(menu2, "Fly: OFF", UDim2.fromOffset(6, 40), function()
     flyEnabled = not flyEnabled
     flyButton.Text = "Fly: " .. (flyEnabled and "ON" or "OFF")
 end)
 
-local flyBox = makeBox(menu2, "Fly speed (max 10000)", UDim2.fromOffset(6, 85))
+local flyBox = makeBox(menu2, "Fly speed (max 10000)", UDim2.fromOffset(6, 76))
 
-makeButton(menu2, "Set Fly Speed", UDim2.fromOffset(6, 120), function()
+makeButton(menu2, "Set Fly Speed", UDim2.fromOffset(6, 108), function()
     local n = tonumber(flyBox.Text)
     if n then
         flySpeed = math.clamp(n, 1, 10000)
     end
 end)
 
-makeButton(menu2, "MENU 3", UDim2.fromOffset(6, 158), function()
-    menu2.Visible = false
-    menu3.Visible = true
-end)
-
-makeButton(menu2, "BACK TO MENU", UDim2.fromOffset(6, 196), function()
-    menu2.Visible = false
-    menu.Visible = true
-end)
-
-makeButton(menu2, "CLOSE MENUS", UDim2.fromOffset(6, 234), function()
-    menu.Visible = false
-    menu2.Visible = false
-    menu3.Visible = false
-end)
-
--- MENU 3: COMBAT
 local auraButton
-auraButton = makeButton(menu3, "Kill Aura: OFF", UDim2.fromOffset(6, 45), function()
+auraButton = makeButton(menu2, "Kill Aura: OFF", UDim2.fromOffset(6, 144), function()
     killAuraEnabled = not killAuraEnabled
     auraButton.Text = "Kill Aura: " .. (killAuraEnabled and "ON" or "OFF")
 end)
 
 local selectedTarget = nil
+
+local targetLabel = Instance.new("TextLabel")
+targetLabel.Size = UDim2.new(1, -12, 0, 26)
+targetLabel.Position = UDim2.fromOffset(6, 180)
+targetLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+targetLabel.TextColor3 = Color3.new(1, 1, 1)
+targetLabel.Text = "Target: none"
+targetLabel.TextSize = 13
+targetLabel.Font = Enum.Font.Gotham
+targetLabel.Parent = menu2
 
 local function getPlayersList()
     local list = {}
@@ -361,22 +343,12 @@ local function selectNextTarget()
     selectedTarget = list[index]
 end
 
-local targetLabel = Instance.new("TextLabel")
-targetLabel.Size = UDim2.new(1, -12, 0, 28)
-targetLabel.Position = UDim2.fromOffset(6, 84)
-targetLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-targetLabel.TextColor3 = Color3.new(1, 1, 1)
-targetLabel.Text = "Target: none"
-targetLabel.TextSize = 14
-targetLabel.Font = Enum.Font.Gotham
-targetLabel.Parent = menu3
-
-makeButton(menu3, "Select Next Player", UDim2.fromOffset(6, 116), function()
+makeButton(menu2, "Select Next Player", UDim2.fromOffset(6, 210), function()
     selectNextTarget()
     targetLabel.Text = "Target: " .. (selectedTarget and selectedTarget.Name or "none")
 end)
 
-makeButton(menu3, "Teleport To Player", UDim2.fromOffset(6, 154), function()
+makeButton(menu2, "Teleport To Player", UDim2.fromOffset(6, 244), function()
     if not selectedTarget or not selectedTarget.Character then
         return
     end
@@ -390,19 +362,12 @@ makeButton(menu3, "Teleport To Player", UDim2.fromOffset(6, 154), function()
     end
 end)
 
-makeButton(menu3, "BACK TO MENU 2", UDim2.fromOffset(6, 192), function()
-    menu3.Visible = false
-    menu2.Visible = true
-end)
-
 -- TARGET LOCK
 local function getNearestEnemy()
     local myChar = player.Character
     local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
-    if not myRoot then
-        return nil
-    end
+    if not myRoot then return nil end
 
     local nearest
     local nearestDistance = math.huge
@@ -426,7 +391,7 @@ local function getNearestEnemy()
     return nearest
 end
 
--- FLY MOVEMENT
+-- FLY
 local bodyVelocity
 local bodyGyro
 
@@ -469,7 +434,6 @@ local function updateFly()
     local right = camera.CFrame.RightVector
 
     local flatForward = Vector3.new(look.X, 0, look.Z)
-
     if flatForward.Magnitude < 0.001 then
         flatForward = Vector3.new(0, 0, -1)
     else
@@ -477,7 +441,6 @@ local function updateFly()
     end
 
     local flatRight = Vector3.new(right.X, 0, right.Z)
-
     if flatRight.Magnitude < 0.001 then
         flatRight = Vector3.new(1, 0, 0)
     else
@@ -561,50 +524,111 @@ RunService.Heartbeat:Connect(function(dt)
                 and target.Character:FindFirstChild("HumanoidRootPart")
 
             if targetRoot and (targetRoot.Position - root.Position).Magnitude <= 50 then
+                -- Requires a server-side handler in your own experience.
                 combatRemote:FireServer(target)
             end
         end
     end
 end)
 
--- RESPAWN CLEANUP
 player.CharacterAdded:Connect(function()
     stopFly()
 end)
 
--- CLOSE / REOPEN
+-- REOPEN BUTTON
 local reopen = Instance.new("TextButton")
-reopen.Size = UDim2.fromOffset(65, 30)
-reopen.Position = UDim2.new(0, 10, 0.5, 0)
+reopen.Size = UDim2.fromOffset(60, 28)
+reopen.Position = UDim2.new(0, 8, 0.5, 0)
 reopen.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
 reopen.TextColor3 = Color3.new(1, 1, 1)
 reopen.Text = "xino"
-reopen.TextSize = 14
 reopen.Font = Enum.Font.GothamBold
+reopen.TextSize = 13
 reopen.Parent = gui
 
-reopen.MouseButton1Click:Connect(function()
+local function showBoth()
     menu.Visible = true
+    menu2.Visible = true
+end
+
+local function hideBoth()
+    menu.Visible = false
     menu2.Visible = false
-    menu3.Visible = false
+end
+
+-- DEVICE LAYOUT
+local function applyDeviceLayout(device)
+    mobileMode = device == "Mobile"
+
+    if mobileMode then
+        -- MOBILE: MENU 2 UNDER MENU 1
+        menu.Size = UDim2.fromOffset(210, 365)
+        menu2.Size = UDim2.fromOffset(210, 315)
+
+        menu.Position = UDim2.new(0, 10, 0, 10)
+        menu2.Position = UDim2.new(0, 10, 0, 385)
+
+        for _, frame in ipairs({menu, menu2}) do
+            for _, item in ipairs(frame:GetChildren()) do
+                if item:IsA("TextButton") then
+                    item.Size = UDim2.new(1, -12, 0, 29)
+                end
+            end
+        end
+    else
+        -- PC: MENU 2 UNDER MENU 1
+        menu.Size = UDim2.fromOffset(250, 405)
+        menu2.Size = UDim2.fromOffset(250, 365)
+
+        menu.Position = UDim2.new(0, 20, 0, 20)
+        menu2.Position = UDim2.new(0, 20, 0, 435)
+    end
+
+    showBoth()
+end
+
+reopen.MouseButton1Click:Connect(function()
+    if menu.Visible or menu2.Visible then
+        hideBoth()
+    else
+        showBoth()
+    end
 end)
 
 -- KEY GATE
 local keyFrame = makeFrame(
     "KEY",
-    UDim2.fromOffset(220, 120),
-    UDim2.new(0.5, -110, 0.5, -60)
+    UDim2.fromOffset(230, 125),
+    UDim2.new(0.5, -115, 0.5, -62)
 )
 
 keyFrame.Visible = true
 makeTitle(keyFrame, "ENTER KEY")
 
-local keyBox = makeBox(keyFrame, "Enter key", UDim2.fromOffset(6, 42))
+local keyBox = makeBox(keyFrame, "Enter key", UDim2.fromOffset(6, 40))
+
+local deviceFrame = makeFrame(
+    "DEVICE SELECT",
+    UDim2.fromOffset(250, 165),
+    UDim2.new(0.5, -125, 0.5, -82)
+)
+
+makeTitle(deviceFrame, "CHOOSE YOUR DEVICE")
+
+makeButton(deviceFrame, "PC - LARGE GUI", UDim2.fromOffset(6, 48), function()
+    deviceFrame.Visible = false
+    applyDeviceLayout("PC")
+end, 38)
+
+makeButton(deviceFrame, "MOBILE - SMALL GUI", UDim2.fromOffset(6, 95), function()
+    deviceFrame.Visible = false
+    applyDeviceLayout("Mobile")
+end, 38)
 
 makeButton(keyFrame, "UNLOCK", UDim2.fromOffset(6, 78), function()
     if keyBox.Text == KEY then
         keyFrame.Visible = false
-        menu.Visible = true
+        deviceFrame.Visible = true
     else
         keyBox.Text = ""
         keyBox.PlaceholderText = "Wrong key!"
