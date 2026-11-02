@@ -1,6 +1,6 @@
 
 --==================================================
--- PRISON LIFE ULTIMATE GUI
+-- XINO'S PRISON LIFE ULTIMATE GUI
 -- LocalScript: StarterPlayer > StarterPlayerScripts
 --==================================================
 
@@ -40,7 +40,7 @@ local function makeFrame(name, size, position)
     frame.Name = name
     frame.Size = size
     frame.Position = position
-    frame.BackgroundColor3 = Color3.fromRGB(25, 15, 15)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     frame.BorderSizePixel = 0
     frame.Visible = false
     frame.Parent = gui
@@ -56,7 +56,7 @@ local function makeButton(parent, text, position, callback)
     local button = Instance.new("TextButton")
     button.Size = UDim2.new(1, -12, 0, 32)
     button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(100, 20, 20)
+    button.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
     button.TextColor3 = Color3.new(1, 1, 1)
     button.Text = text
     button.TextSize = 14
@@ -75,7 +75,7 @@ local function makeBox(parent, placeholder, position)
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(1, -12, 0, 30)
     box.Position = position
-    box.BackgroundColor3 = Color3.fromRGB(45, 30, 30)
+    box.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     box.TextColor3 = Color3.new(1, 1, 1)
     box.PlaceholderColor3 = Color3.fromRGB(190, 190, 190)
     box.PlaceholderText = placeholder
@@ -90,7 +90,7 @@ end
 local function makeTitle(parent, text)
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 35)
-    title.BackgroundColor3 = Color3.fromRGB(130, 15, 15)
+    title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
     title.TextColor3 = Color3.new(1, 1, 1)
     title.Text = text
     title.TextSize = 16
@@ -99,18 +99,35 @@ local function makeTitle(parent, text)
     return title
 end
 
-local menu = makeFrame("MENU", UDim2.fromOffset(220, 390), UDim2.new(0, 20, 0.25, 0))
-local menu2 = makeFrame("MENU2", UDim2.fromOffset(220, 300), UDim2.new(0, 250, 0.25, 0))
-local menu3 = makeFrame("MENU3", UDim2.fromOffset(220, 220), UDim2.new(0, 480, 0.25, 0))
+-- ALL MENUS ON LEFT
+local menu = makeFrame(
+    "MENU",
+    UDim2.fromOffset(220, 420),
+    UDim2.new(0, 20, 0.25, 0)
+)
+
+local menu2 = makeFrame(
+    "MENU2",
+    UDim2.fromOffset(220, 300),
+    UDim2.new(0, 20, 0.25, 0)
+)
+
+-- MENU 3 BELOW MENU 2
+local menu3 = makeFrame(
+    "MENU3",
+    UDim2.fromOffset(220, 240),
+    UDim2.new(0, 20, 0.25, 320)
+)
 
 makeTitle(menu, "XINO'S ULTIMATE GUI")
 makeTitle(menu2, "MOVEMENT")
 makeTitle(menu3, "COMBAT")
 
--- Dragging
+-- DRAGGING
 local function makeDraggable(frame, handle)
     local dragging = false
-    local dragStart, startPosition
+    local dragStart
+    local startPosition
 
     handle.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -127,6 +144,7 @@ local function makeDraggable(frame, handle)
             or input.UserInputType == Enum.UserInputType.Touch
         ) then
             local delta = input.Position - dragStart
+
             frame.Position = UDim2.new(
                 startPosition.X.Scale,
                 startPosition.X.Offset + delta.X,
@@ -167,8 +185,12 @@ local function updateESP()
         if other ~= player and other.Character and isEnemy(other) then
             if espEnabled then
                 local highlight = highlights[other]
+
                 if not highlight or highlight.Parent ~= other.Character then
-                    if highlight then highlight:Destroy() end
+                    if highlight then
+                        highlight:Destroy()
+                    end
+
                     highlight = Instance.new("Highlight")
                     highlight.FillColor = Color3.fromRGB(255, 0, 0)
                     highlight.OutlineColor = Color3.new(1, 1, 1)
@@ -194,25 +216,31 @@ end)
 -- MAIN MENU
 local y = 42
 
-makeButton(menu, "ESP: OFF", UDim2.fromOffset(6, y), function(button)
+local espButton
+espButton = makeButton(menu, "ESP: OFF", UDim2.fromOffset(6, y), function()
     espEnabled = not espEnabled
-    button.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
+    espButton.Text = "ESP: " .. (espEnabled and "ON" or "OFF")
+
     if not espEnabled then
-        for _, h in pairs(highlights) do h:Destroy() end
+        for _, h in pairs(highlights) do
+            h:Destroy()
+        end
         table.clear(highlights)
     end
-end).Name = "ESPButton"
-y = y + 38
-
-makeButton(menu, "Target Lock: OFF", UDim2.fromOffset(6, y), function(button)
-    targetLockEnabled = not targetLockEnabled
-    button.Text = "Target Lock: " .. (targetLockEnabled and "ON" or "OFF")
 end)
 y = y + 38
 
-makeButton(menu, "Noclip: OFF", UDim2.fromOffset(6, y), function(button)
+local targetButton
+targetButton = makeButton(menu, "Target Lock: OFF", UDim2.fromOffset(6, y), function()
+    targetLockEnabled = not targetLockEnabled
+    targetButton.Text = "Target Lock: " .. (targetLockEnabled and "ON" or "OFF")
+end)
+y = y + 38
+
+local noclipButton
+noclipButton = makeButton(menu, "Noclip: OFF", UDim2.fromOffset(6, y), function()
     noclipEnabled = not noclipEnabled
-    button.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
+    noclipButton.Text = "Noclip: " .. (noclipEnabled and "ON" or "OFF")
 end)
 y = y + 38
 
@@ -221,13 +249,16 @@ y = y + 34
 
 makeButton(menu, "Set WalkSpeed", UDim2.fromOffset(6, y), function()
     local n = tonumber(speedBox.Text)
-    if n then speed = math.clamp(n, 16, 10000) end
+    if n then
+        speed = math.clamp(n, 16, 10000)
+    end
 end)
 y = y + 36
 
-makeButton(menu, "Loop Speed: OFF", UDim2.fromOffset(6, y), function(button)
+local speedLoopButton
+speedLoopButton = makeButton(menu, "Loop Speed: OFF", UDim2.fromOffset(6, y), function()
     loopSpeed = not loopSpeed
-    button.Text = "Loop Speed: " .. (loopSpeed and "ON" or "OFF")
+    speedLoopButton.Text = "Loop Speed: " .. (loopSpeed and "ON" or "OFF")
 end)
 y = y + 38
 
@@ -236,44 +267,60 @@ y = y + 34
 
 makeButton(menu, "Set JumpPower", UDim2.fromOffset(6, y), function()
     local n = tonumber(jumpBox.Text)
-    if n then jumpPower = math.clamp(n, 0, 10000) end
+    if n then
+        jumpPower = math.clamp(n, 0, 10000)
+    end
 end)
 y = y + 36
 
-makeButton(menu, "Loop Jump: OFF", UDim2.fromOffset(6, y), function(button)
+local jumpLoopButton
+jumpLoopButton = makeButton(menu, "Loop Jump: OFF", UDim2.fromOffset(6, y), function()
     loopJump = not loopJump
-    button.Text = "Loop Jump: " .. (loopJump and "ON" or "OFF")
+    jumpLoopButton.Text = "Loop Jump: " .. (loopJump and "ON" or "OFF")
 end)
 y = y + 38
 
 makeButton(menu, "MENU 2", UDim2.fromOffset(6, y), function()
-    menu2.Visible = not menu2.Visible
+    menu.Visible = false
+    menu2.Visible = true
+    menu3.Visible = false
 end)
 
--- MENU 2: FLY
-local flyButton = makeButton(menu2, "Fly: OFF", UDim2.fromOffset(6, 45), function()
+-- MENU 2: MOVEMENT
+local flyButton
+flyButton = makeButton(menu2, "Fly: OFF", UDim2.fromOffset(6, 45), function()
     flyEnabled = not flyEnabled
     flyButton.Text = "Fly: " .. (flyEnabled and "ON" or "OFF")
 end)
 
 local flyBox = makeBox(menu2, "Fly speed (max 10000)", UDim2.fromOffset(6, 85))
+
 makeButton(menu2, "Set Fly Speed", UDim2.fromOffset(6, 120), function()
     local n = tonumber(flyBox.Text)
-    if n then flySpeed = math.clamp(n, 1, 10000) end
+    if n then
+        flySpeed = math.clamp(n, 1, 10000)
+    end
 end)
 
 makeButton(menu2, "MENU 3", UDim2.fromOffset(6, 158), function()
-    menu3.Visible = not menu3.Visible
+    menu2.Visible = false
+    menu3.Visible = true
 end)
 
-makeButton(menu2, "CLOSE MENUS", UDim2.fromOffset(6, 196), function()
+makeButton(menu2, "BACK TO MENU", UDim2.fromOffset(6, 196), function()
+    menu2.Visible = false
+    menu.Visible = true
+end)
+
+makeButton(menu2, "CLOSE MENUS", UDim2.fromOffset(6, 234), function()
     menu.Visible = false
     menu2.Visible = false
     menu3.Visible = false
 end)
 
 -- MENU 3: COMBAT
-local auraButton = makeButton(menu3, "Kill Aura: OFF", UDim2.fromOffset(6, 45), function()
+local auraButton
+auraButton = makeButton(menu3, "Kill Aura: OFF", UDim2.fromOffset(6, 45), function()
     killAuraEnabled = not killAuraEnabled
     auraButton.Text = "Kill Aura: " .. (killAuraEnabled and "ON" or "OFF")
 end)
@@ -282,25 +329,32 @@ local selectedTarget = nil
 
 local function getPlayersList()
     local list = {}
+
     for _, other in ipairs(Players:GetPlayers()) do
         if isEnemy(other) and other.Character
         and other.Character:FindFirstChild("HumanoidRootPart") then
             table.insert(list, other)
         end
     end
+
     return list
 end
 
 local function selectNextTarget()
     local list = getPlayersList()
+
     if #list == 0 then
         selectedTarget = nil
         return
     end
 
     local index = 0
+
     for i, other in ipairs(list) do
-        if other == selectedTarget then index = i break end
+        if other == selectedTarget then
+            index = i
+            break
+        end
     end
 
     index = (index % #list) + 1
@@ -310,9 +364,11 @@ end
 local targetLabel = Instance.new("TextLabel")
 targetLabel.Size = UDim2.new(1, -12, 0, 28)
 targetLabel.Position = UDim2.fromOffset(6, 84)
-targetLabel.BackgroundColor3 = Color3.fromRGB(45, 30, 30)
+targetLabel.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 targetLabel.TextColor3 = Color3.new(1, 1, 1)
 targetLabel.Text = "Target: none"
+targetLabel.TextSize = 14
+targetLabel.Font = Enum.Font.Gotham
 targetLabel.Parent = menu3
 
 makeButton(menu3, "Select Next Player", UDim2.fromOffset(6, 116), function()
@@ -321,7 +377,9 @@ makeButton(menu3, "Select Next Player", UDim2.fromOffset(6, 116), function()
 end)
 
 makeButton(menu3, "Teleport To Player", UDim2.fromOffset(6, 154), function()
-    if not selectedTarget or not selectedTarget.Character then return end
+    if not selectedTarget or not selectedTarget.Character then
+        return
+    end
 
     local myChar = player.Character
     local theirRoot = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
@@ -332,13 +390,22 @@ makeButton(menu3, "Teleport To Player", UDim2.fromOffset(6, 154), function()
     end
 end)
 
+makeButton(menu3, "BACK TO MENU 2", UDim2.fromOffset(6, 192), function()
+    menu3.Visible = false
+    menu2.Visible = true
+end)
+
 -- TARGET LOCK
 local function getNearestEnemy()
     local myChar = player.Character
     local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return nil end
 
-    local nearest, nearestDistance = nil, math.huge
+    if not myRoot then
+        return nil
+    end
+
+    local nearest
+    local nearestDistance = math.huge
 
     for _, other in ipairs(Players:GetPlayers()) do
         if isEnemy(other) and other.Character then
@@ -347,6 +414,7 @@ local function getNearestEnemy()
 
             if root and hum and hum.Health > 0 then
                 local distance = (root.Position - myRoot.Position).Magnitude
+
                 if distance < nearestDistance then
                     nearest = other
                     nearestDistance = distance
@@ -363,8 +431,15 @@ local bodyVelocity
 local bodyGyro
 
 local function stopFly()
-    if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
-    if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    if bodyVelocity then
+        bodyVelocity:Destroy()
+        bodyVelocity = nil
+    end
+
+    if bodyGyro then
+        bodyGyro:Destroy()
+        bodyGyro = nil
+    end
 end
 
 local function updateFly()
@@ -376,6 +451,8 @@ local function updateFly()
         stopFly()
         return
     end
+
+    camera = workspace.CurrentCamera
 
     if not bodyVelocity then
         bodyVelocity = Instance.new("BodyVelocity")
@@ -392,6 +469,7 @@ local function updateFly()
     local right = camera.CFrame.RightVector
 
     local flatForward = Vector3.new(look.X, 0, look.Z)
+
     if flatForward.Magnitude < 0.001 then
         flatForward = Vector3.new(0, 0, -1)
     else
@@ -399,6 +477,7 @@ local function updateFly()
     end
 
     local flatRight = Vector3.new(right.X, 0, right.Z)
+
     if flatRight.Magnitude < 0.001 then
         flatRight = Vector3.new(1, 0, 0)
     else
@@ -439,8 +518,13 @@ RunService.Heartbeat:Connect(function(dt)
     local root = char and char:FindFirstChild("HumanoidRootPart")
 
     if hum then
-        if loopSpeed then hum.WalkSpeed = speed end
-        if loopJump then hum.JumpPower = jumpPower end
+        if loopSpeed then
+            hum.WalkSpeed = speed
+        end
+
+        if loopJump then
+            hum.JumpPower = jumpPower
+        end
     end
 
     if noclipEnabled and char then
@@ -459,11 +543,15 @@ RunService.Heartbeat:Connect(function(dt)
             and target.Character:FindFirstChild("HumanoidRootPart")
 
         if targetRoot then
-            camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetRoot.Position)
+            camera.CFrame = CFrame.lookAt(
+                camera.CFrame.Position,
+                targetRoot.Position
+            )
         end
     end
 
     auraTimer += dt
+
     if killAuraEnabled and auraTimer >= 0.5 then
         auraTimer = 0
 
@@ -488,21 +576,31 @@ end)
 local reopen = Instance.new("TextButton")
 reopen.Size = UDim2.fromOffset(65, 30)
 reopen.Position = UDim2.new(0, 10, 0.5, 0)
-reopen.BackgroundColor3 = Color3.fromRGB(130, 15, 15)
+reopen.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
 reopen.TextColor3 = Color3.new(1, 1, 1)
 reopen.Text = "xino"
+reopen.TextSize = 14
+reopen.Font = Enum.Font.GothamBold
 reopen.Parent = gui
 
 reopen.MouseButton1Click:Connect(function()
-    menu.Visible = not menu.Visible
+    menu.Visible = true
+    menu2.Visible = false
+    menu3.Visible = false
 end)
 
 -- KEY GATE
-local keyFrame = makeFrame("KEY", UDim2.fromOffset(220, 120), UDim2.new(0.5, -110, 0.5, -60))
+local keyFrame = makeFrame(
+    "KEY",
+    UDim2.fromOffset(220, 120),
+    UDim2.new(0.5, -110, 0.5, -60)
+)
+
 keyFrame.Visible = true
 makeTitle(keyFrame, "ENTER KEY")
 
 local keyBox = makeBox(keyFrame, "Enter key", UDim2.fromOffset(6, 42))
+
 makeButton(keyFrame, "UNLOCK", UDim2.fromOffset(6, 78), function()
     if keyBox.Text == KEY then
         keyFrame.Visible = false
