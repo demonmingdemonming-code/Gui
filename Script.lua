@@ -1,15 +1,14 @@
-
--- XINO'S PRISON LIFE ULTIMATE GUI + PLAYER PICKER
+-- PRISON LIFE ULTIMATE GUI + TPA
 -- LocalScript: StarterPlayer > StarterPlayerScripts
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
+-- SETTINGS
 local KEY = "xino7"
 local speed = 16
 local jumpPower = 50
@@ -18,6 +17,7 @@ local loopJumpPower = false
 local noclip = false
 local espEnabled = false
 local targetLock = false
+
 local flyEnabled = false
 local flySpeed = 30
 local selectedVersion = nil
@@ -27,12 +27,10 @@ local originalCollisions = {}
 local highlights = {}
 local lockedTarget = nil
 
-local flyVelocity
-local flyGyro
-local flyConnection
-local noclipConnection
-
-local TPAEvent = ReplicatedStorage:WaitForChild("InstantTPAEvent")
+local flyVelocity = nil
+local flyGyro = nil
+local flyConnection = nil
+local noclipConnection = nil
 
 -- GUI
 local gui = Instance.new("ScreenGui")
@@ -76,13 +74,15 @@ keyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 keyFrame.Parent = gui
 
 local keyBox = makeBox(
-    keyFrame, "Enter key",
+    keyFrame,
+    "Enter key",
     UDim2.fromOffset(210, 35),
     UDim2.fromOffset(20, 20)
 )
 
 local keyButton = makeButton(
-    keyFrame, "UNLOCK",
+    keyFrame,
+    "UNLOCK",
     UDim2.fromOffset(210, 35),
     UDim2.fromOffset(20, 70)
 )
@@ -105,13 +105,15 @@ selectTitle.Font = Enum.Font.GothamBold
 selectTitle.Parent = selectFrame
 
 local pcButton = makeButton(
-    selectFrame, "PC VERSION",
+    selectFrame,
+    "PC VERSION",
     UDim2.fromOffset(125, 65),
     UDim2.fromOffset(15, 65)
 )
 
 local mobileButton = makeButton(
-    selectFrame, "MOBILE VERSION",
+    selectFrame,
+    "MOBILE VERSION",
     UDim2.fromOffset(125, 65),
     UDim2.fromOffset(160, 65)
 )
@@ -129,67 +131,53 @@ main.Parent = gui
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -32, 0, 35)
 title.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
-title.Text = "Xino's Scripts"
+title.Text = "PRISON LIFE ULTIMATE GUI"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
 title.Parent = main
 
 local closeButton = makeButton(
-    main, "X",
-    UDim2.fromOffset(32, 35),
-    UDim2.new(1, -32, 0, 0)
+    main, "X", UDim2.fromOffset(32, 35), UDim2.new(1, -32, 0, 0)
 )
 
 local menuSwitch = makeButton(
-    main, "MENU2",
-    UDim2.fromOffset(65, 30),
-    UDim2.new(0, -67, 0, 42)
+    main, "MENU2", UDim2.fromOffset(65, 30), UDim2.new(0, -67, 0, 42)
 )
 
 local espButton = makeButton(
-    main, "ESP: OFF",
-    UDim2.fromOffset(220, 32),
-    UDim2.fromOffset(20, 45)
+    main, "ESP: OFF", UDim2.fromOffset(220, 32), UDim2.fromOffset(20, 45)
 )
 
 local targetButton = makeButton(
-    main, "Target Lock: OFF",
-    UDim2.fromOffset(220, 32),
-    UDim2.fromOffset(20, 83)
+    main, "Target Lock: OFF", UDim2.fromOffset(220, 32), UDim2.fromOffset(20, 83)
 )
 
 local noclipButton = makeButton(
-    main, "Noclip: OFF",
-    UDim2.fromOffset(220, 32),
-    UDim2.fromOffset(20, 121)
+    main, "Noclip: OFF", UDim2.fromOffset(220, 32), UDim2.fromOffset(20, 121)
 )
 
 local speedBox = makeBox(
-    main, "WalkSpeed (16-10000)",
-    UDim2.fromOffset(220, 30),
+    main, "WalkSpeed (16-10000)", UDim2.fromOffset(220, 30),
     UDim2.fromOffset(20, 165)
 )
 
 local speedButton = makeButton(
-    main, "Loop Speed: OFF",
-    UDim2.fromOffset(220, 32),
+    main, "Loop Speed: OFF", UDim2.fromOffset(220, 32),
     UDim2.fromOffset(20, 200)
 )
 
 local jumpBox = makeBox(
-    main, "JumpPower (0-10000)",
-    UDim2.fromOffset(220, 30),
+    main, "JumpPower (0-10000)", UDim2.fromOffset(220, 30),
     UDim2.fromOffset(20, 238)
 )
 
 local jumpButton = makeButton(
-    main, "Loop JumpPower: OFF",
-    UDim2.fromOffset(220, 32),
+    main, "Loop JumpPower: OFF", UDim2.fromOffset(220, 32),
     UDim2.fromOffset(20, 273)
 )
 
--- MENU 2
+-- MENU2
 local menu2 = Instance.new("Frame")
 menu2.Size = UDim2.fromOffset(260, 390)
 menu2.Position = main.Position
@@ -209,26 +197,21 @@ menu2Title.Font = Enum.Font.GothamBold
 menu2Title.Parent = menu2
 
 local menu2Close = makeButton(
-    menu2, "X",
-    UDim2.fromOffset(32, 35),
-    UDim2.new(1, -32, 0, 0)
+    menu2, "X", UDim2.fromOffset(32, 35), UDim2.new(1, -32, 0, 0)
 )
 
 local backButton = makeButton(
-    menu2, "BACK TO MENU",
-    UDim2.fromOffset(220, 32),
+    menu2, "BACK TO MENU", UDim2.fromOffset(220, 32),
     UDim2.fromOffset(20, 50)
 )
 
 local flyButton = makeButton(
-    menu2, "Fly: OFF",
-    UDim2.fromOffset(220, 35),
+    menu2, "Fly: OFF", UDim2.fromOffset(220, 35),
     UDim2.fromOffset(20, 100)
 )
 
 local flySpeedBox = makeBox(
-    menu2, "Fly Speed (30-10000)",
-    UDim2.fromOffset(220, 30),
+    menu2, "Fly Speed (30-10000)", UDim2.fromOffset(220, 30),
     UDim2.fromOffset(20, 145)
 )
 flySpeedBox.Text = "30"
@@ -244,175 +227,22 @@ flyHelp.Font = Enum.Font.Gotham
 flyHelp.Text = "Look in the direction you want to fly, then use your movement controls."
 flyHelp.Parent = menu2
 
--- PLAYER PICKER BUTTONS
+-- TPA BUTTONS
 local playerSelector = makeButton(
-    menu2, "SELECT PLAYER",
+    menu2,
+    "SELECT PLAYER",
     UDim2.fromOffset(150, 38),
     UDim2.fromOffset(15, 155)
 )
 
 local teleportButton = makeButton(
-    menu2, "TELEPORT TO PLAYER",
+    menu2,
+    "TELEPORT TO PLAYER",
     UDim2.fromOffset(150, 38),
     UDim2.fromOffset(185, 155)
 )
 
--- PLAYER LIST WINDOW
-local playerListFrame = Instance.new("Frame")
-playerListFrame.Size = UDim2.fromOffset(230, 270)
-playerListFrame.Position = UDim2.new(0.5, -115, 0.5, -135)
-playerListFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-playerListFrame.BorderSizePixel = 2
-playerListFrame.Visible = false
-playerListFrame.ZIndex = 10
-playerListFrame.Parent = gui
-
-local playerListTitle = Instance.new("TextLabel")
-playerListTitle.Size = UDim2.new(1, -35, 0, 35)
-playerListTitle.BackgroundColor3 = Color3.fromRGB(130, 0, 0)
-playerListTitle.Text = "CHOOSE A PLAYER"
-playerListTitle.TextColor3 = Color3.new(1, 1, 1)
-playerListTitle.TextScaled = true
-playerListTitle.Font = Enum.Font.GothamBold
-playerListTitle.ZIndex = 11
-playerListTitle.Parent = playerListFrame
-
-local playerListClose = makeButton(
-    playerListFrame, "X",
-    UDim2.fromOffset(35, 35),
-    UDim2.new(1, -35, 0, 0)
-)
-playerListClose.ZIndex = 12
-
-local playerScroll = Instance.new("ScrollingFrame")
-playerScroll.Size = UDim2.new(1, -10, 1, -45)
-playerScroll.Position = UDim2.fromOffset(5, 40)
-playerScroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-playerScroll.BorderSizePixel = 0
-playerScroll.ScrollBarThickness = 6
-playerScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-playerScroll.ZIndex = 11
-playerScroll.Parent = playerListFrame
-
-local playerLayout = Instance.new("UIListLayout")
-playerLayout.Padding = UDim.new(0, 5)
-playerLayout.Parent = playerScroll
-
-local function refreshPlayerList()
-    for _, child in ipairs(playerScroll:GetChildren()) do
-        if child:IsA("TextButton") or child:IsA("TextLabel") then
-            child:Destroy()
-        end
-    end
-
-    local availablePlayers = {}
-
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
-        if otherPlayer ~= player then
-            table.insert(availablePlayers, otherPlayer)
-        end
-    end
-
-    table.sort(availablePlayers, function(a, b)
-        return a.Name:lower() < b.Name:lower()
-    end)
-
-    if #availablePlayers == 0 then
-        local emptyLabel = Instance.new("TextLabel")
-        emptyLabel.Size = UDim2.new(1, -5, 0, 35)
-        emptyLabel.BackgroundTransparency = 1
-        emptyLabel.Text = "NO OTHER PLAYERS"
-        emptyLabel.TextColor3 = Color3.new(1, 1, 1)
-        emptyLabel.TextScaled = true
-        emptyLabel.ZIndex = 12
-        emptyLabel.Parent = playerScroll
-    end
-
-    for _, otherPlayer in ipairs(availablePlayers) do
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -5, 0, 35)
-        button.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
-        button.TextColor3 = Color3.new(1, 1, 1)
-        button.TextScaled = true
-        button.Font = Enum.Font.GothamBold
-        button.Text = otherPlayer.Name
-        button.ZIndex = 12
-        button.Parent = playerScroll
-
-        button.MouseButton1Click:Connect(function()
-            if otherPlayer.Parent ~= Players then
-                refreshPlayerList()
-                return
-            end
-
-            selectedPlayer = otherPlayer
-            playerSelector.Text = otherPlayer.Name
-            teleportButton.Text = "TELEPORT TO PLAYER"
-            playerListFrame.Visible = false
-        end)
-    end
-
-    task.defer(function()
-        playerScroll.CanvasSize = UDim2.new(
-            0, 0, 0, playerLayout.AbsoluteContentSize.Y + 5
-        )
-    end)
-end
-
-playerSelector.MouseButton1Click:Connect(function()
-    refreshPlayerList()
-    playerListFrame.Visible = true
-end)
-
-playerListClose.MouseButton1Click:Connect(function()
-    playerListFrame.Visible = false
-end)
-
-Players.PlayerAdded:Connect(function()
-    if playerListFrame.Visible then
-        refreshPlayerList()
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(otherPlayer)
-    if selectedPlayer == otherPlayer then
-        selectedPlayer = nil
-        playerSelector.Text = "SELECT PLAYER"
-        teleportButton.Text = "TELEPORT TO PLAYER"
-    end
-
-    if playerListFrame.Visible then
-        refreshPlayerList()
-    end
-end)
-
--- CHARACTER HELPERS
-local function getCharacter()
-    return player.Character
-end
-
-local function getHumanoid()
-    local character = getCharacter()
-    return character and character:FindFirstChildOfClass("Humanoid")
-end
-
-local function getRoot()
-    local character = getCharacter()
-    return character and character:FindFirstChild("HumanoidRootPart")
-end
-
--- SERVER-REQUESTED TELEPORT
-teleportButton.MouseButton1Click:Connect(function()
-    if not selectedPlayer or selectedPlayer.Parent ~= Players then
-        teleportButton.Text = "SELECT PLAYER FIRST"
-        return
-    end
-
-    TPAEvent:FireServer(selectedPlayer.UserId)
-    teleportButton.Text = "TELEPORT REQUESTED"
-end)
-
--- LAYOUT
+-- LAYOUT SYSTEM
 local function applyLayout(mode)
     selectedVersion = mode
 
@@ -474,6 +304,7 @@ local function applyLayout(mode)
 
         teleportButton.Size = UDim2.fromOffset(225, 38)
         teleportButton.Position = UDim2.fromOffset(255, 205)
+
     else
         espButton.Size = UDim2.fromOffset(150, 35)
         espButton.Position = UDim2.fromOffset(15, 45)
@@ -517,8 +348,6 @@ local function applyLayout(mode)
         teleportButton.Size = UDim2.fromOffset(150, 35)
         teleportButton.Position = UDim2.fromOffset(185, 205)
     end
-
-    playerListFrame.Position = UDim2.new(0.5, -115, 0.5, -135)
 end
 
 pcButton.MouseButton1Click:Connect(function()
@@ -535,9 +364,7 @@ end)
 
 -- REOPEN BUTTON
 local reopenButton = makeButton(
-    gui, "XINO",
-    UDim2.fromOffset(110, 35),
-    UDim2.fromOffset(10, 10)
+    gui, "XINO", UDim2.fromOffset(110, 35), UDim2.fromOffset(10, 10)
 )
 reopenButton.Visible = false
 
@@ -551,6 +378,86 @@ end)
 backButton.MouseButton1Click:Connect(function()
     menu2.Visible = false
     main.Visible = true
+end)
+
+-- CHARACTER HELPERS
+local function getCharacter()
+    return player.Character
+end
+
+local function getHumanoid()
+    local character = getCharacter()
+    return character and character:FindFirstChildOfClass("Humanoid")
+end
+
+local function getRoot()
+    local character = getCharacter()
+    return character and character:FindFirstChild("HumanoidRootPart")
+end
+
+-- TPA PLAYER SYSTEM
+local function refreshSelectedPlayer()
+    local available = {}
+
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            table.insert(available, otherPlayer)
+        end
+    end
+
+    if #available == 0 then
+        selectedPlayer = nil
+        playerSelector.Text = "NO PLAYERS"
+        return
+    end
+
+    local currentIndex = 0
+
+    for index, otherPlayer in ipairs(available) do
+        if otherPlayer == selectedPlayer then
+            currentIndex = index
+            break
+        end
+    end
+
+    currentIndex += 1
+
+    if currentIndex > #available then
+        currentIndex = 1
+    end
+
+    selectedPlayer = available[currentIndex]
+    playerSelector.Text = selectedPlayer.Name
+end
+
+playerSelector.MouseButton1Click:Connect(refreshSelectedPlayer)
+
+teleportButton.MouseButton1Click:Connect(function()
+    if not selectedPlayer or selectedPlayer.Parent ~= Players then
+        teleportButton.Text = "SELECT PLAYER FIRST"
+        return
+    end
+
+    local myRoot = getRoot()
+    local targetCharacter = selectedPlayer.Character
+    local targetRoot = targetCharacter
+        and targetCharacter:FindFirstChild("HumanoidRootPart")
+    local targetHumanoid = targetCharacter
+        and targetCharacter:FindFirstChildOfClass("Humanoid")
+
+    if myRoot and targetRoot and targetHumanoid and targetHumanoid.Health > 0 then
+        myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 4)
+        teleportButton.Text = "TELEPORTED!"
+    else
+        teleportButton.Text = "PLAYER UNAVAILABLE"
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(otherPlayer)
+    if selectedPlayer == otherPlayer then
+        selectedPlayer = nil
+        playerSelector.Text = "SELECT PLAYER"
+    end
 end)
 
 -- FLY CLEANUP
@@ -702,7 +609,7 @@ flyButton.MouseButton1Click:Connect(function()
     end
 end)
 
--- INPUT VALIDATION
+-- SPEED BOX VALIDATION
 speedBox.FocusLost:Connect(function()
     local value = tonumber(speedBox.Text)
     if value then
@@ -760,7 +667,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- NOCLIP
+-- CLIENT-SIDED NOCLIP
 local function restoreCollisions()
     for part, oldValue in pairs(originalCollisions) do
         if part and part.Parent then
@@ -877,7 +784,7 @@ Players.PlayerRemoving:Connect(function(otherPlayer)
     end
 end)
 
--- TARGET SELECTION
+-- FIND ENEMY NEAREST TO CROSSHAIR
 local function getTargetAtCrosshair()
     local bestTarget = nil
     local bestDistance = 180
@@ -886,10 +793,8 @@ local function getTargetAtCrosshair()
     for _, otherPlayer in ipairs(Players:GetPlayers()) do
         if isEnemy(otherPlayer) then
             local character = otherPlayer.Character
-            local root = character
-                and character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character
-                and character:FindFirstChildOfClass("Humanoid")
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
             if root and humanoid and humanoid.Health > 0 then
                 local screenPosition, onScreen =
@@ -938,10 +843,8 @@ RunService:BindToRenderStep(
         if not lockedTarget then return end
 
         local character = lockedTarget.Character
-        local root = character
-            and character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character
-            and character:FindFirstChildOfClass("Humanoid")
+        local root = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
         if root and humanoid and humanoid.Health > 0 then
             camera.CFrame = CFrame.lookAt(camera.CFrame.Position, root.Position)
@@ -955,7 +858,6 @@ RunService:BindToRenderStep(
 local function closeGUI()
     main.Visible = false
     menu2.Visible = false
-    playerListFrame.Visible = false
     reopenButton.Visible = true
 end
 
